@@ -29,7 +29,9 @@ export function CasaPage() {
   const { query, addExpense, updateExpense, deleteExpense, total } = useCasaExpenses();
   const [dialogItem, setDialogItem] = useState<ExpenseItem | "new" | null>(null);
 
-  const sorted = [...(query.data ?? [])].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const sorted = [...(query.data ?? [])].sort((a, b) =>
+    (b.fecha ?? "").localeCompare(a.fecha ?? ""),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,7 +104,7 @@ export function CasaPage() {
                 <TableRow key={e.id}>
                   <TableCell className="font-medium text-foreground">{e.concepto}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatShortDate(e.fecha)}
+                    {e.fecha ? formatShortDate(e.fecha) : "—"}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
                     {e.cantidad}

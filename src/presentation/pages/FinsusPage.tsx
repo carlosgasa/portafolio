@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { Landmark, Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp } from "lucide-react";
+import { Landmark, Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -103,7 +105,7 @@ export function FinsusPage() {
               <TableHead>Plazo</TableHead>
               <TableHead>Apertura</TableHead>
               <TableHead>Vence</TableHead>
-              <TableHead className="w-20" />
+              <TableHead className="w-32" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,8 +123,17 @@ export function FinsusPage() {
               </TableRow>
             ) : (
               data?.accounts.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium text-foreground">{a.cuenta}</TableCell>
+                <TableRow key={a.id} className={cn(a.vencida && "opacity-50")}>
+                  <TableCell className="font-medium text-foreground">
+                    <div className="flex items-center gap-2">
+                      {a.cuenta}
+                      {a.vencida && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Vencida
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
                     {formatCurrency(a.saldo)}
                   </TableCell>
@@ -136,6 +147,18 @@ export function FinsusPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        aria-label={a.vencida ? "Marcar como activa" : "Marcar como vencida"}
+                        title={a.vencida ? "Marcar como activa" : "Marcar como vencida"}
+                        onClick={() =>
+                          updateAccount.mutate({ id: a.id, patch: { vencida: !a.vencida } })
+                        }
+                      >
+                        <History className="size-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

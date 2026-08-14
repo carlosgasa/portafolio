@@ -6,5 +6,6 @@ export interface ExpenseItem {
   cantidad: number;
   precioUnitario: number;
   total: number;
-  fecha: DateOnly;
+  /** Opcional: el historico importado del Excel no llevaba fecha por partida. */
+  fecha?: DateOnly;
 }

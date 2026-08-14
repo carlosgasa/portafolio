@@ -8,4 +8,6 @@ export interface FixedTermAccount {
   plazo: string;
   fechaApertura: DateOnly;
   fechaVencimiento: DateOnly;
+  /** Ya vencio y no cuenta en el total (igual que marcarlo como texto en el Excel). */
+  vencida?: boolean;
 }

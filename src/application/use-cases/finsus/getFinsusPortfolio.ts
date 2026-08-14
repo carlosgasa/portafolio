@@ -19,7 +19,9 @@ export async function getFinsusPortfolio(
     repo.listMovements(uid),
   ]);
 
-  const valorTotal = accounts.reduce((sum, a) => sum + a.saldo, 0);
+  const valorTotal = accounts
+    .filter((a) => !a.vencida)
+    .reduce((sum, a) => sum + a.saldo, 0);
   const aporteTotal = movements.reduce((sum, m) => sum + m.monto, 0);
   const rendimiento = aporteTotal !== 0 ? (valorTotal - aporteTotal) / Math.abs(aporteTotal) : 0;
 

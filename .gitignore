@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Datos personales / credenciales - nunca al repo
+/scripts/import-data/
+/service-account*.json
+/functions/lib/
+__pycache__/
+*.pyc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
