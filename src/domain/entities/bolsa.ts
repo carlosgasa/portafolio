@@ -5,12 +5,12 @@ export interface StockHolding {
   ticker: string;
   nombre: string;
   cantidad: number;
-  costoPromedio: number;
+  costoTotal: number;
 }
 
-export interface StockPricePoint {
-  id: string;
+/** Ultimo precio conocido de un ticker (captura manual). */
+export interface StockPrice {
   ticker: string;
-  fecha: DateOnly;
   precio: number;
+  fecha: DateOnly;
 }
