@@ -9,6 +9,7 @@ import { useAuth } from "@/presentation/providers/AuthProvider";
 import type {
   CardPayment,
   CreditCard,
+  CuentasSnapshot,
   Debt,
   LiquidBalance,
   Person,
@@ -107,6 +108,15 @@ export function useCuentas() {
     onSuccess: invalidate,
   });
 
+  const addSnapshot = useMutation({
+    mutationFn: (snapshot: Omit<CuentasSnapshot, "id">) => repo.addSnapshot(uid, snapshot),
+    onSuccess: invalidate,
+  });
+  const deleteSnapshot = useMutation({
+    mutationFn: (id: string) => repo.deleteSnapshot(uid, id),
+    onSuccess: invalidate,
+  });
+
   return {
     query,
     addCard,
@@ -125,5 +135,7 @@ export function useCuentas() {
     addLiquidBalance,
     updateLiquidBalance,
     deleteLiquidBalance,
+    addSnapshot,
+    deleteSnapshot,
   };
 }

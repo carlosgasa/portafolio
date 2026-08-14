@@ -2,6 +2,7 @@ import type { ICuentasRepository } from "@/domain/repositories/ICuentasRepositor
 import type {
   CardPayment,
   CreditCard,
+  CuentasSnapshot,
   Debt,
   Installment,
   LiquidBalance,
@@ -15,6 +16,7 @@ const PERSONS = "personas";
 const DEBTS = "deudas";
 const INSTALLMENTS = "cuotas";
 const LIQUID = "liquidez";
+const SNAPSHOTS = "cuentasSnapshots";
 
 export class FirestoreCuentasRepository implements ICuentasRepository {
   listCards(uid: string) {
@@ -87,5 +89,15 @@ export class FirestoreCuentasRepository implements ICuentasRepository {
   }
   deleteLiquidBalance(uid: string, id: string) {
     return deleteItem(uid, LIQUID, id);
+  }
+
+  listSnapshots(uid: string) {
+    return listAll<Omit<CuentasSnapshot, "id">>(uid, SNAPSHOTS);
+  }
+  addSnapshot(uid: string, snapshot: Omit<CuentasSnapshot, "id">) {
+    return addItem(uid, SNAPSHOTS, snapshot).then(() => undefined);
+  }
+  deleteSnapshot(uid: string, id: string) {
+    return deleteItem(uid, SNAPSHOTS, id);
   }
 }

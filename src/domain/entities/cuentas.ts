@@ -3,7 +3,8 @@ import type { DateOnly } from "./common";
 export interface CreditCard {
   id: string;
   nombre: string;
-  gastoMesActual: number;
+  /** Color de acento elegido por el usuario (hex). */
+  color?: string;
 }
 
 export interface CardPayment {
@@ -52,4 +53,21 @@ export interface LiquidBalance {
   monto: number;
   tipo: LiquidBalanceType;
   fecha: DateOnly;
+}
+
+export type SnapshotTipo = "tarjetas" | "personas" | "liquidez";
+
+export interface SnapshotDetalleItem {
+  nombre: string;
+  monto: number;
+}
+
+/** Foto del total (y su desglose) de una pestana de Cuentas en una fecha dada,
+ * para poder consultar despues cuanto se debia/tenia en un mes especifico. */
+export interface CuentasSnapshot {
+  id: string;
+  tipo: SnapshotTipo;
+  fecha: DateOnly;
+  total: number;
+  detalle: SnapshotDetalleItem[];
 }

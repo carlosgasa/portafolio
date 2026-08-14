@@ -12,6 +12,7 @@ const percentFormatter = new Intl.NumberFormat("es-MX", {
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   day: "2-digit",
   month: "short",
+  year: "numeric",
 });
 
 export function formatCurrency(value: number): string {

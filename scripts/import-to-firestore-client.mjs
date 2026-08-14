@@ -15,7 +15,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import readline from "node:readline";
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import {

@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
 import {
   Dialog,
   DialogContent,
@@ -67,15 +69,7 @@ export function MovementsList({ movements, onAdd, onDelete }: MovementsListProps
                   >
                     {formatCurrency(m.monto)}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    aria-label="Eliminar movimiento"
-                    onClick={() => onDelete(m.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                  <DeleteButton ariaLabel="Eliminar movimiento" onConfirm={() => onDelete(m.id)} />
                 </div>
               </li>
             ))}
@@ -100,7 +94,7 @@ function MovementForm({
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit({ fecha, monto: Number(monto), nota: nota || undefined });
+      await onSubmit({ fecha, monto: Number(monto), ...(nota ? { nota } : {}) });
     } finally {
       setSubmitting(false);
     }
@@ -113,13 +107,7 @@ function MovementForm({
       </DialogHeader>
       <div className="flex flex-col gap-2">
         <Label htmlFor="mov-fecha">Fecha</Label>
-        <Input
-          id="mov-fecha"
-          type="date"
-          required
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-        />
+        <DatePicker id="mov-fecha" value={fecha} onChange={setFecha} />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="mov-monto">Monto (negativo si es retiro)</Label>

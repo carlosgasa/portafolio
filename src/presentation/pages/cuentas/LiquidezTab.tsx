@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Pencil, Trash2, Banknote } from "lucide-react";
+import { Plus, Pencil, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatCard } from "@/presentation/components/StatCard";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { SnapshotHistory } from "@/presentation/components/SnapshotHistory";
 import type { useCuentas } from "@/presentation/hooks/useCuentas";
-import type { LiquidBalance, LiquidBalanceType } from "@/domain/entities/cuentas";
+import type { CuentasSnapshot, LiquidBalance, LiquidBalanceType } from "@/domain/entities/cuentas";
 import { formatCurrency } from "@/shared/utils/format";
 
 type CuentasApi = ReturnType<typeof useCuentas>;
@@ -30,10 +33,11 @@ const TIPO_LABEL: Record<LiquidBalanceType, string> = {
   ingreso_esperado: "Ingreso esperado",
 };
 
-export function LiquidezTab({ api, balances, total }: {
+export function LiquidezTab({ api, balances, total, snapshots }: {
   api: CuentasApi;
   balances: LiquidBalance[];
   total: number;
+  snapshots: CuentasSnapshot[];
 }) {
   const [dialogItem, setDialogItem] = useState<LiquidBalance | "new" | null>(null);
 
@@ -41,27 +45,38 @@ export function LiquidezTab({ api, balances, total }: {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <StatCard label="Disponible a corto plazo" value={formatCurrency(total)} icon={Banknote} gradient="purple" />
-        <Dialog open={dialogItem !== null} onOpenChange={(o) => !o && setDialogItem(null)}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setDialogItem("new")}>
-              <Plus className="size-4" />
-              Registro
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <LiquidForm
-              initial={dialogItem !== "new" ? dialogItem : null}
-              onSubmit={async (values) => {
-                if (dialogItem !== "new" && dialogItem) {
-                  await api.updateLiquidBalance.mutateAsync({ id: dialogItem.id, patch: values });
-                } else {
-                  await api.addLiquidBalance.mutateAsync(values);
-                }
-                setDialogItem(null);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <SnapshotHistory
+            tipo="liquidez"
+            label="liquidez"
+            snapshots={snapshots}
+            currentTotal={total}
+            currentDetalle={balances.map((b) => ({ nombre: b.nombre, monto: b.monto }))}
+            onTake={(s) => api.addSnapshot.mutateAsync(s)}
+            onDelete={(id) => api.deleteSnapshot.mutateAsync(id)}
+          />
+          <Dialog open={dialogItem !== null} onOpenChange={(o) => !o && setDialogItem(null)}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setDialogItem("new")}>
+                <Plus className="size-4" />
+                Registro
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <LiquidForm
+                initial={dialogItem !== "new" ? dialogItem : null}
+                onSubmit={async (values) => {
+                  if (dialogItem !== "new" && dialogItem) {
+                    await api.updateLiquidBalance.mutateAsync({ id: dialogItem.id, patch: values });
+                  } else {
+                    await api.addLiquidBalance.mutateAsync(values);
+                  }
+                  setDialogItem(null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {balances.length === 0 ? (
@@ -87,15 +102,7 @@ export function LiquidezTab({ api, balances, total }: {
                 >
                   <Pencil className="size-3.5" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  aria-label="Eliminar"
-                  onClick={() => api.deleteLiquidBalance.mutate(b.id)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                <DeleteButton onConfirm={() => api.deleteLiquidBalance.mutate(b.id)} />
               </div>
             </li>
           ))}
@@ -164,13 +171,7 @@ function LiquidForm({
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="l-fecha">Fecha</Label>
-        <Input
-          id="l-fecha"
-          type="date"
-          required
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-        />
+        <DatePicker id="l-fecha" value={fecha} onChange={setFecha} />
       </div>
       <DialogFooter>
         <Button type="submit" disabled={submitting}>

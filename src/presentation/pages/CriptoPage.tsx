@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Bitcoin, Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp } from "lucide-react";
+import { Bitcoin, Plus, Pencil, Tag, Wallet, PiggyBank, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { MovementsList } from "@/presentation/components/MovementsList";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { useCryptoPortfolio } from "@/presentation/hooks/useCryptoPortfolio";
 import type { CryptoHolding } from "@/domain/entities/cripto";
 import type { CryptoHoldingWithValue } from "@/application/use-cases/cripto/getCryptoPortfolio";
@@ -29,11 +30,19 @@ import { formatCurrency, formatPercent } from "@/shared/utils/format";
 import { cn } from "@/lib/utils";
 
 export function CriptoPage() {
-  const { query, addHolding, updateHolding, deleteHolding, addMovement, deleteMovement } =
-    useCryptoPortfolio();
+  const {
+    query,
+    addHolding,
+    updateHolding,
+    deleteHolding,
+    addMovement,
+    deleteMovement,
+    setPrice,
+  } = useCryptoPortfolio();
   const [dialogHolding, setDialogHolding] = useState<CryptoHoldingWithValue | "new" | null>(
     null,
   );
+  const [priceSymbol, setPriceSymbol] = useState<string | null>(null);
 
   const data = query.data;
 
@@ -159,20 +168,21 @@ export function CriptoPage() {
                         variant="ghost"
                         size="icon"
                         className="size-7"
-                        aria-label="Editar"
-                        onClick={() => setDialogHolding(h)}
+                        aria-label="Actualizar precio"
+                        onClick={() => setPriceSymbol(h.symbol)}
                       >
-                        <Pencil className="size-3.5" />
+                        <Tag className="size-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="size-7"
-                        aria-label="Eliminar"
-                        onClick={() => deleteHolding.mutate(h.id)}
+                        aria-label="Editar"
+                        onClick={() => setDialogHolding(h)}
                       >
-                        <Trash2 className="size-3.5" />
+                        <Pencil className="size-3.5" />
                       </Button>
+                      <DeleteButton onConfirm={() => deleteHolding.mutate(h.id)} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -181,6 +191,20 @@ export function CriptoPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={priceSymbol !== null} onOpenChange={(o) => !o && setPriceSymbol(null)}>
+        <DialogContent>
+          {priceSymbol && (
+            <PriceForm
+              symbol={priceSymbol}
+              onSubmit={async (price) => {
+                await setPrice.mutateAsync(price);
+                setPriceSymbol(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <MovementsList
         movements={data?.movements ?? []}
@@ -256,6 +280,60 @@ function HoldingForm({
           />
         </div>
       </div>
+      <DialogFooter>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Guardando…" : "Guardar"}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function PriceForm({
+  symbol,
+  onSubmit,
+}: {
+  symbol: string;
+  onSubmit: (price: { symbol: string; precioUsd: number; precioMxn: number; fecha: string }) => Promise<void>;
+}) {
+  const [precioMxn, setPrecioMxn] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        symbol,
+        precioUsd: 0,
+        precioMxn: Number(precioMxn),
+        fecha: new Date().toISOString().slice(0, 10),
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <DialogHeader>
+        <DialogTitle>Actualizar precio de {symbol}</DialogTitle>
+      </DialogHeader>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="cp-precio">Precio actual (MXN)</Label>
+        <Input
+          id="cp-precio"
+          type="number"
+          step="any"
+          required
+          autoFocus
+          value={precioMxn}
+          onChange={(e) => setPrecioMxn(e.target.value)}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Se sobreescribe automaticamente cada dia si el simbolo tiene precio disponible.
+      </p>
       <DialogFooter>
         <Button type="submit" disabled={submitting}>
           {submitting ? "Guardando…" : "Guardar"}

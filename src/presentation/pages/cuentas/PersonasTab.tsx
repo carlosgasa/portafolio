@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Trash2, Users, ChevronRight } from "lucide-react";
+import { Plus, Users, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -20,18 +21,21 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/presentation/components/StatCard";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { SnapshotHistory } from "@/presentation/components/SnapshotHistory";
 import type { useCuentas } from "@/presentation/hooks/useCuentas";
 import type { PersonWithDebts } from "@/application/use-cases/cuentas/getCuentasOverview";
-import type { DebtType } from "@/domain/entities/cuentas";
+import type { CuentasSnapshot, DebtType } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { cn } from "@/lib/utils";
 
 type CuentasApi = ReturnType<typeof useCuentas>;
 
-export function PersonasTab({ api, persons, totalMeDeben }: {
+export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
   api: CuentasApi;
   persons: PersonWithDebts[];
   totalMeDeben: number;
+  snapshots: CuentasSnapshot[];
 }) {
   const [newPersonOpen, setNewPersonOpen] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -48,33 +52,44 @@ export function PersonasTab({ api, persons, totalMeDeben }: {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <StatCard label="Total que me deben" value={formatCurrency(totalMeDeben)} icon={Users} gradient="cyan" />
-        <Dialog open={newPersonOpen} onOpenChange={setNewPersonOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="size-4" />
-              Persona
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleAddPerson} className="flex flex-col gap-4">
-              <DialogHeader>
-                <DialogTitle>Nueva persona</DialogTitle>
-              </DialogHeader>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="p-nombre">Nombre</Label>
-                <Input
-                  id="p-nombre"
-                  required
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                />
-              </div>
-              <DialogFooter>
-                <Button type="submit">Guardar</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <SnapshotHistory
+            tipo="personas"
+            label="personas"
+            snapshots={snapshots}
+            currentTotal={totalMeDeben}
+            currentDetalle={persons.map((p) => ({ nombre: p.nombre, monto: p.totalMeDebe }))}
+            onTake={(s) => api.addSnapshot.mutateAsync(s)}
+            onDelete={(id) => api.deleteSnapshot.mutateAsync(id)}
+          />
+          <Dialog open={newPersonOpen} onOpenChange={setNewPersonOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="size-4" />
+                Persona
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <form onSubmit={handleAddPerson} className="flex flex-col gap-4">
+                <DialogHeader>
+                  <DialogTitle>Nueva persona</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="p-nombre">Nombre</Label>
+                  <Input
+                    id="p-nombre"
+                    required
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="submit">Guardar</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {persons.length === 0 ? (
@@ -102,15 +117,11 @@ export function PersonasTab({ api, persons, totalMeDeben }: {
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </div>
                 </button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-2 size-7"
-                  aria-label="Eliminar persona"
-                  onClick={() => api.deletePerson.mutate(p.id)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                <DeleteButton
+                  ariaLabel="Eliminar persona"
+                  className="ml-2"
+                  onConfirm={() => api.deletePerson.mutate(p.id)}
+                />
               </CardContent>
             </Card>
           ))}
@@ -176,15 +187,7 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
                   <span className="font-mono text-sm tabular-nums text-foreground">
                     {formatCurrency(d.saldoPendiente)}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    aria-label="Eliminar deuda"
-                    onClick={() => api.deleteDebt.mutate(d.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                  <DeleteButton ariaLabel="Eliminar deuda" onConfirm={() => api.deleteDebt.mutate(d.id)} />
                 </div>
               </div>
 
@@ -350,13 +353,7 @@ function DebtForm({
         <Label htmlFor="d-fecha">
           {tipo === "simple" ? "Fecha" : "Fecha de la primera cuota"}
         </Label>
-        <Input
-          id="d-fecha"
-          type="date"
-          required
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-        />
+        <DatePicker id="d-fecha" value={fecha} onChange={setFecha} />
       </div>
 
       <DialogFooter>

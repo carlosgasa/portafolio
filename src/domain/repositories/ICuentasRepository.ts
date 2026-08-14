@@ -1,6 +1,7 @@
 import type {
   CardPayment,
   CreditCard,
+  CuentasSnapshot,
   Debt,
   Installment,
   LiquidBalance,
@@ -47,4 +48,8 @@ export interface ICuentasRepository {
     patch: Partial<Omit<LiquidBalance, "id">>,
   ): Promise<void>;
   deleteLiquidBalance(uid: string, id: string): Promise<void>;
+
+  listSnapshots(uid: string): Promise<CuentasSnapshot[]>;
+  addSnapshot(uid: string, snapshot: Omit<CuentasSnapshot, "id">): Promise<void>;
+  deleteSnapshot(uid: string, id: string): Promise<void>;
 }

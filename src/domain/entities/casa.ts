@@ -8,4 +8,6 @@ export interface ExpenseItem {
   total: number;
   /** Opcional: el historico importado del Excel no llevaba fecha por partida. */
   fecha?: DateOnly;
+  /** Opcional: el historico importado tampoco traia categoria. */
+  categoria?: string;
 }

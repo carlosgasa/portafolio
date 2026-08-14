@@ -32,13 +32,28 @@ export function CuentasPage() {
             <TabsTrigger value="liquidez">Liquidez</TabsTrigger>
           </TabsList>
           <TabsContent value="tarjetas" className="mt-4">
-            <TarjetasTab api={api} cards={data.cards} totalPendiente={data.totalTarjetasPendiente} />
+            <TarjetasTab
+              api={api}
+              cards={data.cards}
+              totalPendiente={data.totalTarjetasPendiente}
+              snapshots={data.snapshots}
+            />
           </TabsContent>
           <TabsContent value="personas" className="mt-4">
-            <PersonasTab api={api} persons={data.persons} totalMeDeben={data.totalMeDeben} />
+            <PersonasTab
+              api={api}
+              persons={data.persons}
+              totalMeDeben={data.totalMeDeben}
+              snapshots={data.snapshots}
+            />
           </TabsContent>
           <TabsContent value="liquidez" className="mt-4">
-            <LiquidezTab api={api} balances={data.liquidBalances} total={data.totalLiquidez} />
+            <LiquidezTab
+              api={api}
+              balances={data.liquidBalances}
+              total={data.totalLiquidez}
+              snapshots={data.snapshots}
+            />
           </TabsContent>
         </Tabs>
       )}

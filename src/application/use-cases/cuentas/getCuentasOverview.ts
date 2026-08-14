@@ -2,6 +2,7 @@ import type { ICuentasRepository } from "@/domain/repositories/ICuentasRepositor
 import type {
   CardPayment,
   CreditCard,
+  CuentasSnapshot,
   Debt,
   Installment,
   LiquidBalance,
@@ -27,6 +28,7 @@ export interface CuentasOverview {
   cards: CardWithPayments[];
   persons: PersonWithDebts[];
   liquidBalances: LiquidBalance[];
+  snapshots: CuentasSnapshot[];
   totalTarjetasPendiente: number;
   totalMeDeben: number;
   totalLiquidez: number;
@@ -36,7 +38,7 @@ export async function getCuentasOverview(
   repo: ICuentasRepository,
   uid: string,
 ): Promise<CuentasOverview> {
-  const [cards, cardPayments, persons, debts, installments, liquidBalances] =
+  const [cards, cardPayments, persons, debts, installments, liquidBalances, snapshots] =
     await Promise.all([
       repo.listCards(uid),
       repo.listCardPayments(uid),
@@ -44,6 +46,7 @@ export async function getCuentasOverview(
       repo.listDebts(uid),
       repo.listInstallments(uid),
       repo.listLiquidBalances(uid),
+      repo.listSnapshots(uid),
     ]);
 
   const cardsWithPayments: CardWithPayments[] = cards.map((c) => {
@@ -73,6 +76,7 @@ export async function getCuentasOverview(
     cards: cardsWithPayments,
     persons: personsWithDebts,
     liquidBalances,
+    snapshots,
     totalTarjetasPendiente: cardsWithPayments.reduce((s, c) => s + c.pendiente, 0),
     totalMeDeben: personsWithDebts.reduce((s, p) => s + p.totalMeDebe, 0),
     totalLiquidez: liquidBalances.reduce((s, b) => s + b.monto, 0),

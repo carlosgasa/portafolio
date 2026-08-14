@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { TrendingUp, Plus, Pencil, Trash2, Wallet, PiggyBank, Tag } from "lucide-react";
+import { TrendingUp, Plus, Pencil, Wallet, PiggyBank, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { MovementsList } from "@/presentation/components/MovementsList";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { useBolsaPortfolio } from "@/presentation/hooks/useBolsaPortfolio";
 import type { StockHolding } from "@/domain/entities/bolsa";
 import type { StockHoldingWithValue } from "@/application/use-cases/bolsa/getBolsaPortfolio";
@@ -179,15 +180,7 @@ export function BolsaPage() {
                       >
                         <Pencil className="size-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        aria-label="Eliminar"
-                        onClick={() => deleteHolding.mutate(h.id)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      <DeleteButton onConfirm={() => deleteHolding.mutate(h.id)} />
                     </div>
                   </TableCell>
                 </TableRow>

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCryptoPortfolio } from "@/application/use-cases/cripto/getCryptoPortfolio";
 import { FirestoreCryptoRepository } from "@/infrastructure/firebase/repositories/FirestoreCryptoRepository";
 import { useAuth } from "@/presentation/providers/AuthProvider";
-import type { CryptoHolding } from "@/domain/entities/cripto";
+import type { CryptoHolding, CryptoPrice } from "@/domain/entities/cripto";
 import type { Movement } from "@/domain/entities/common";
 
 const repo = new FirestoreCryptoRepository();
@@ -49,5 +49,18 @@ export function useCryptoPortfolio() {
     onSuccess: invalidate,
   });
 
-  return { query, addHolding, updateHolding, deleteHolding, addMovement, deleteMovement };
+  const setPrice = useMutation({
+    mutationFn: (price: CryptoPrice) => repo.setPrice(uid, price),
+    onSuccess: invalidate,
+  });
+
+  return {
+    query,
+    addHolding,
+    updateHolding,
+    deleteHolding,
+    addMovement,
+    deleteMovement,
+    setPrice,
+  };
 }

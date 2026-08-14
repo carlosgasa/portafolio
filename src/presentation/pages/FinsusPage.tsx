@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { Landmark, Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp, History } from "lucide-react";
+import { Landmark, Plus, Pencil, Wallet, PiggyBank, TrendingUp, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { MovementsList } from "@/presentation/components/MovementsList";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { useFinsusPortfolio } from "@/presentation/hooks/useFinsusPortfolio";
 import type { FixedTermAccount } from "@/domain/entities/finsus";
 import { formatCurrency, formatPercent, formatShortDate } from "@/shared/utils/format";
@@ -51,7 +53,7 @@ export function FinsusPage() {
           <DialogTrigger asChild>
             <Button onClick={() => setDialogAccount("new")}>
               <Plus className="size-4" />
-              Cuenta
+              Inversión
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -100,7 +102,7 @@ export function FinsusPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Cuenta</TableHead>
+              <TableHead>Inversión</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
               <TableHead className="text-right">Tasa</TableHead>
               <TableHead>Plazo</TableHead>
@@ -119,7 +121,7 @@ export function FinsusPage() {
             ) : data?.accounts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  Sin cuentas todavía.
+                  Sin inversiones todavía.
                 </TableCell>
               </TableRow>
             ) : (
@@ -169,15 +171,7 @@ export function FinsusPage() {
                       >
                         <Pencil className="size-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        aria-label="Eliminar"
-                        onClick={() => deleteAccount.mutate(a.id)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      <DeleteButton onConfirm={() => deleteAccount.mutate(a.id)} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -207,8 +201,9 @@ function AccountForm({
   const [saldo, setSaldo] = useState(String(initial?.saldo ?? ""));
   const [tasa, setTasa] = useState(String(initial?.tasa ?? ""));
   const [plazo, setPlazo] = useState(initial?.plazo ?? "");
-  const [fechaApertura, setFechaApertura] = useState(initial?.fechaApertura ?? "");
-  const [fechaVencimiento, setFechaVencimiento] = useState(initial?.fechaVencimiento ?? "");
+  const today = new Date().toISOString().slice(0, 10);
+  const [fechaApertura, setFechaApertura] = useState(initial?.fechaApertura ?? today);
+  const [fechaVencimiento, setFechaVencimiento] = useState(initial?.fechaVencimiento ?? today);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -231,10 +226,10 @@ function AccountForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <DialogHeader>
-        <DialogTitle>{initial ? "Editar cuenta" : "Nueva cuenta"}</DialogTitle>
+        <DialogTitle>{initial ? "Editar inversión" : "Nueva inversión"}</DialogTitle>
       </DialogHeader>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="f-cuenta">Cuenta</Label>
+        <Label htmlFor="f-cuenta">Inversión</Label>
         <Input id="f-cuenta" required value={cuenta} onChange={(e) => setCuenta(e.target.value)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -268,23 +263,11 @@ function AccountForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="f-apertura">Fecha apertura</Label>
-          <Input
-            id="f-apertura"
-            type="date"
-            required
-            value={fechaApertura}
-            onChange={(e) => setFechaApertura(e.target.value)}
-          />
+          <DatePicker id="f-apertura" value={fechaApertura} onChange={setFechaApertura} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="f-vence">Fecha vencimiento</Label>
-          <Input
-            id="f-vence"
-            type="date"
-            required
-            value={fechaVencimiento}
-            onChange={(e) => setFechaVencimiento(e.target.value)}
-          />
+          <DatePicker id="f-vence" value={fechaVencimiento} onChange={setFechaVencimiento} />
         </div>
       </div>
       <DialogFooter>

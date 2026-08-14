@@ -8,10 +8,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
+import { DeleteButton } from "@/presentation/components/DeleteButton";
 import {
   Dialog,
   DialogContent,
@@ -136,15 +138,7 @@ export function ValueHistoryCard({
                   <span className="font-mono tabular-nums text-foreground">
                     {formatCurrency(p.valor)}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    aria-label="Eliminar"
-                    onClick={() => onDelete(p.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                  <DeleteButton onConfirm={() => onDelete(p.id)} />
                 </div>
               </li>
             ))}
@@ -183,13 +177,7 @@ function PointForm({
       </DialogHeader>
       <div className="flex flex-col gap-2">
         <Label htmlFor="vp-fecha">Fecha</Label>
-        <Input
-          id="vp-fecha"
-          type="date"
-          required
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-        />
+        <DatePicker id="vp-fecha" value={fecha} onChange={setFecha} />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="vp-valor">{valueLabel} (MXN)</Label>
