@@ -1,0 +1,182 @@
+import { useState, type FormEvent } from "react";
+import { Plus, Pencil, Trash2, Banknote } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { StatCard } from "@/presentation/components/StatCard";
+import type { useCuentas } from "@/presentation/hooks/useCuentas";
+import type { LiquidBalance, LiquidBalanceType } from "@/domain/entities/cuentas";
+import { formatCurrency } from "@/shared/utils/format";
+
+type CuentasApi = ReturnType<typeof useCuentas>;
+
+const TIPO_LABEL: Record<LiquidBalanceType, string> = {
+  ahorro: "Ahorro",
+  ingreso_esperado: "Ingreso esperado",
+};
+
+export function LiquidezTab({ api, balances, total }: {
+  api: CuentasApi;
+  balances: LiquidBalance[];
+  total: number;
+}) {
+  const [dialogItem, setDialogItem] = useState<LiquidBalance | "new" | null>(null);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <StatCard label="Disponible a corto plazo" value={formatCurrency(total)} icon={Banknote} />
+        <Dialog open={dialogItem !== null} onOpenChange={(o) => !o && setDialogItem(null)}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setDialogItem("new")}>
+              <Plus className="size-4" />
+              Registro
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <LiquidForm
+              initial={dialogItem !== "new" ? dialogItem : null}
+              onSubmit={async (values) => {
+                if (dialogItem !== "new" && dialogItem) {
+                  await api.updateLiquidBalance.mutateAsync({ id: dialogItem.id, patch: values });
+                } else {
+                  await api.addLiquidBalance.mutateAsync(values);
+                }
+                setDialogItem(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {balances.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Sin registros todavía.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/60 bg-card/60">
+          {balances.map((b) => (
+            <li key={b.id} className="flex items-center justify-between px-4 py-3 text-sm">
+              <div>
+                <p className="text-foreground">{b.nombre}</p>
+                <p className="text-xs text-muted-foreground">{TIPO_LABEL[b.tipo]}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono tabular-nums text-foreground">
+                  {formatCurrency(b.monto)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label="Editar"
+                  onClick={() => setDialogItem(b)}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label="Eliminar"
+                  onClick={() => api.deleteLiquidBalance.mutate(b.id)}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LiquidForm({
+  initial,
+  onSubmit,
+}: {
+  initial: LiquidBalance | null;
+  onSubmit: (values: Omit<LiquidBalance, "id">) => Promise<void>;
+}) {
+  const [nombre, setNombre] = useState(initial?.nombre ?? "");
+  const [monto, setMonto] = useState(String(initial?.monto ?? ""));
+  const [tipo, setTipo] = useState<LiquidBalanceType>(initial?.tipo ?? "ahorro");
+  const [fecha, setFecha] = useState(initial?.fecha ?? new Date().toISOString().slice(0, 10));
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await onSubmit({ nombre, monto: Number(monto), tipo, fecha });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <DialogHeader>
+        <DialogTitle>{initial ? "Editar registro" : "Nuevo registro"}</DialogTitle>
+      </DialogHeader>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="l-nombre">Nombre (ej. Cajita Nu, Nómina)</Label>
+        <Input id="l-nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="l-monto">Monto (MXN)</Label>
+          <Input
+            id="l-monto"
+            type="number"
+            step="any"
+            required
+            value={monto}
+            onChange={(e) => setMonto(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Tipo</Label>
+          <Select value={tipo} onValueChange={(v) => setTipo(v as LiquidBalanceType)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ahorro">Ahorro</SelectItem>
+              <SelectItem value="ingreso_esperado">Ingreso esperado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="l-fecha">Fecha</Label>
+        <Input
+          id="l-fecha"
+          type="date"
+          required
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+        />
+      </div>
+      <DialogFooter>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Guardando…" : "Guardar"}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}

@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/presentation/components/layout/AppLayout";
 import { ProtectedRoute } from "@/presentation/components/ProtectedRoute";
-import { ComingSoonPage } from "@/presentation/pages/ComingSoonPage";
 
 const DashboardPage = lazy(() =>
   import("@/presentation/pages/DashboardPage").then((m) => ({
@@ -22,6 +21,26 @@ const BolsaPage = lazy(() =>
 const FinsusPage = lazy(() =>
   import("@/presentation/pages/FinsusPage").then((m) => ({
     default: m.FinsusPage,
+  })),
+);
+const YoTePrestoPage = lazy(() =>
+  import("@/presentation/pages/YoTePrestoPage").then((m) => ({
+    default: m.YoTePrestoPage,
+  })),
+);
+const AforePage = lazy(() =>
+  import("@/presentation/pages/AforePage").then((m) => ({
+    default: m.AforePage,
+  })),
+);
+const CasaPage = lazy(() =>
+  import("@/presentation/pages/CasaPage").then((m) => ({
+    default: m.CasaPage,
+  })),
+);
+const CuentasPage = lazy(() =>
+  import("@/presentation/pages/CuentasPage").then((m) => ({
+    default: m.CuentasPage,
   })),
 );
 
@@ -44,16 +63,10 @@ function App() {
               <Route path="cripto" element={<CriptoPage />} />
               <Route path="bolsa" element={<BolsaPage />} />
               <Route path="finsus" element={<FinsusPage />} />
-              <Route
-                path="yotepresto"
-                element={<ComingSoonPage title="YoTePresto" />}
-              />
-              <Route path="afore" element={<ComingSoonPage title="AFORE" />} />
-              <Route path="casa" element={<ComingSoonPage title="Casa" />} />
-              <Route
-                path="cuentas"
-                element={<ComingSoonPage title="Cuentas" />}
-              />
+              <Route path="yotepresto" element={<YoTePrestoPage />} />
+              <Route path="afore" element={<AforePage />} />
+              <Route path="casa" element={<CasaPage />} />
+              <Route path="cuentas" element={<CuentasPage />} />
             </Route>
           </Routes>
         </Suspense>
