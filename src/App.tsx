@@ -19,6 +19,11 @@ const BolsaPage = lazy(() =>
     default: m.BolsaPage,
   })),
 );
+const FinsusPage = lazy(() =>
+  import("@/presentation/pages/FinsusPage").then((m) => ({
+    default: m.FinsusPage,
+  })),
+);
 
 function PageFallback() {
   return (
@@ -38,7 +43,7 @@ function App() {
               <Route index element={<DashboardPage />} />
               <Route path="cripto" element={<CriptoPage />} />
               <Route path="bolsa" element={<BolsaPage />} />
-              <Route path="finsus" element={<ComingSoonPage title="Finsus" />} />
+              <Route path="finsus" element={<FinsusPage />} />
               <Route
                 path="yotepresto"
                 element={<ComingSoonPage title="YoTePresto" />}
