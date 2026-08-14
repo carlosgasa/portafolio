@@ -32,7 +32,6 @@ const COLLECTIONS = [
   { file: "finsusMovimientos.json", collection: "finsusMovimientos" },
   { file: "criptoHoldings.json", collection: "criptoHoldings" },
   { file: "criptoMovimientos.json", collection: "criptoMovimientos" },
-  { file: "bolsaHoldings.json", collection: "bolsaHoldings" },
   { file: "bolsaMovimientos.json", collection: "bolsaMovimientos" },
 ];
 

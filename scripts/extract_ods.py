@@ -206,7 +206,16 @@ def clean_symbol(nombre):
     return re.sub(r'[^A-Z0-9]', '', base.upper())
 
 
+CRIPTO_SIN_CANTIDAD = {'SOL (ph ph2)', 'ETH(sophon)', 'BTC(wallet mezo)', 'JLP(k1 k2)'}
+
+
 def extract_criptos(rows):
+    """Columna B es el precio de mercado (formula GOOGLEFINANCE/IMPORTDATA), la
+    cantidad real esta en la columna C. Para SOL/ETH/BTC(wallet mezo)/JLP la
+    columna C esta en 0 (no se llevaba cantidad ahi), asi que se excluyen y se
+    agregan manualmente en la app. costoTotal no se puede derivar del sheet
+    (columna D es precio*cantidad = valor actual, no costo de adquisicion), se
+    deja en 0 para no reportar una ganancia/perdida falsa."""
     holdings = []
     movimientos = []
     in_deposits = False
@@ -222,20 +231,25 @@ def extract_criptos(rows):
                 movimientos.append({'fecha': fecha[:10], 'monto': monto, 'nota': get(row, 2)})
             continue
         nombre = col0
-        cantidad = get(row, 1)
-        if nombre and cantidad is not None and not DATE_RE.match(str(nombre)):
+        cantidad = get(row, 2)
+        if nombre and cantidad is not None and not DATE_RE.match(str(nombre)) and str(nombre) not in CRIPTO_SIN_CANTIDAD:
             holdings.append({
                 'nombre': str(nombre),
                 'symbol': clean_symbol(nombre),
                 'cantidad': cantidad,
-                'costoTotal': get(row, 3) or 0,
+                'costoTotal': 0,
             })
     return holdings, movimientos
 
 
 def extract_bolsa(rows):
-    """La hoja Bolsa no tiene fila de encabezado: la fila 0 ya es un holding real."""
-    holdings = []
+    """La hoja Bolsa no tiene fila de encabezado: la fila 0 ya es un holding real.
+
+    La columna B es solo el precio de mercado (formula GOOGLEFINANCE); la
+    columna C (cantidad real) esta en 0 para las 6 posiciones registradas, es
+    decir nunca se llevo cantidad ahi. No se importan holdings de Bolsa por
+    ahora (se agregan manualmente en la app); solo se extraen los movimientos
+    de deposito/retiro, que si son datos reales."""
     movimientos = []
     in_deposits = False
     for row in rows:
@@ -248,17 +262,7 @@ def extract_bolsa(rows):
             monto = get(row, 1)
             if isinstance(fecha, str) and DATE_RE.match(fecha) and monto is not None:
                 movimientos.append({'fecha': fecha[:10], 'monto': monto})
-            continue
-        ticker = col0
-        cantidad = get(row, 1)
-        if ticker and cantidad is not None and not DATE_RE.match(str(ticker)):
-            holdings.append({
-                'ticker': clean_symbol(ticker),
-                'nombre': str(ticker),
-                'cantidad': cantidad,
-                'costoTotal': 0,
-            })
-    return holdings, movimientos
+    return movimientos
 
 
 def main():
@@ -274,7 +278,7 @@ def main():
     yotepresto_valores, yotepresto_mov = extract_yotepresto(sheets['YoTePresto'])
     finsus_cuentas, finsus_mov = extract_finsus(sheets['Finsus'])
     cripto_holdings, cripto_mov = extract_criptos(sheets['Criptos'])
-    bolsa_holdings, bolsa_mov = extract_bolsa(sheets['Bolsa'])
+    bolsa_mov = extract_bolsa(sheets['Bolsa'])
 
     data = {
         'snapshots': snapshots,
@@ -286,7 +290,6 @@ def main():
         'finsusMovimientos': finsus_mov,
         'criptoHoldings': cripto_holdings,
         'criptoMovimientos': cripto_mov,
-        'bolsaHoldings': bolsa_holdings,
         'bolsaMovimientos': bolsa_mov,
     }
 
