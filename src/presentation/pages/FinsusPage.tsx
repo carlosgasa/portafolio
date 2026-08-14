@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Landmark, Plus, Pencil, Wallet, PiggyBank, TrendingUp, History } from "lucide-react";
+import { Landmark, Plus, Pencil, Wallet, PiggyBank, TrendingUp, History, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +68,9 @@ export function FinsusPage() {
 
   const data = query.data;
   const accounts = data?.accounts ?? [];
+  const pagoMensualTotal = accounts
+    .filter((a) => !a.vencida)
+    .reduce((s, a) => s + pagoMensual(a), 0);
 
   const sortedAccounts = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -139,9 +142,10 @@ export function FinsusPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         {query.isLoading ? (
           <>
+            <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
@@ -160,6 +164,12 @@ export function FinsusPage() {
               value={formatPercent(data?.rendimiento ?? 0)}
               icon={TrendingUp}
               tone={(data?.rendimiento ?? 0) >= 0 ? "positive" : "negative"}
+            />
+            <StatCard
+              label="Pago mensual total"
+              value={formatCurrency(pagoMensualTotal, 2)}
+              icon={CalendarClock}
+              gradient="purple"
             />
           </>
         )}
@@ -210,7 +220,7 @@ export function FinsusPage() {
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{a.tasa}%</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    <Money value={pagoMensual(a)} />
+                    <Money value={pagoMensual(a)} decimals={2} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatShortDate(a.fechaApertura)}

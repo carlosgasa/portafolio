@@ -4,6 +4,13 @@ const currencyFormatter = new Intl.NumberFormat("es-MX", {
   maximumFractionDigits: 0,
 });
 
+const currencyFormatterDecimals = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const percentFormatter = new Intl.NumberFormat("es-MX", {
   style: "percent",
   maximumFractionDigits: 1,
@@ -15,8 +22,8 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   year: "numeric",
 });
 
-export function formatCurrency(value: number): string {
-  return currencyFormatter.format(value);
+export function formatCurrency(value: number, decimals?: 2): string {
+  return decimals === 2 ? currencyFormatterDecimals.format(value) : currencyFormatter.format(value);
 }
 
 export function formatPercent(value: number): string {
