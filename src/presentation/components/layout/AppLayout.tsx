@@ -1,0 +1,112 @@
+import { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import { Menu, LogOut, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { navItems } from "./nav-items";
+import { useAuth } from "@/presentation/providers/AuthProvider";
+
+function Brand() {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1">
+      <Zap className="size-6 text-primary" />
+      <span className="text-lg font-semibold tracking-wide text-foreground">
+        Portafolio
+      </span>
+    </div>
+  );
+}
+
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <nav className="flex flex-col gap-1">
+      {navItems.map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === "/"}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              isActive
+                ? "bg-primary/15 text-primary glow-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            )
+          }
+        >
+          <Icon className="size-4" />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+export function AppLayout() {
+  const { user, signOutUser } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="flex min-h-dvh">
+      {/* Sidebar de escritorio */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card/40 p-4 md:flex">
+        <Brand />
+        <div className="mt-6 flex-1">
+          <NavLinks />
+        </div>
+        <UserFooter userLabel={user?.displayName ?? user?.email} onSignOut={signOutUser} />
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar de móvil */}
+        <header className="flex items-center justify-between border-b border-border bg-card/40 px-4 py-3 md:hidden">
+          <Brand />
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Abrir menú">
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 bg-card">
+              <SheetTitle className="px-4 pt-4">
+                <Brand />
+              </SheetTitle>
+              <div className="flex h-full flex-col p-4 pt-2">
+                <div className="flex-1">
+                  <NavLinks onNavigate={() => setOpen(false)} />
+                </div>
+                <UserFooter
+                  userLabel={user?.displayName ?? user?.email}
+                  onSignOut={signOutUser}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function UserFooter({
+  userLabel,
+  onSignOut,
+}: {
+  userLabel?: string | null;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-4">
+      <span className="truncate text-xs text-muted-foreground">{userLabel}</span>
+      <Button variant="ghost" size="icon" aria-label="Cerrar sesión" onClick={onSignOut}>
+        <LogOut className="size-4" />
+      </Button>
+    </div>
+  );
+}

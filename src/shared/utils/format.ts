@@ -1,0 +1,27 @@
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  maximumFractionDigits: 0,
+});
+
+const percentFormatter = new Intl.NumberFormat("es-MX", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
+
+const dateFormatter = new Intl.DateTimeFormat("es-MX", {
+  day: "2-digit",
+  month: "short",
+});
+
+export function formatCurrency(value: number): string {
+  return currencyFormatter.format(value);
+}
+
+export function formatPercent(value: number): string {
+  return percentFormatter.format(value);
+}
+
+export function formatShortDate(dateOnly: string): string {
+  return dateFormatter.format(new Date(`${dateOnly}T00:00:00`));
+}

@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // App de uso exclusivo personal: solo el correo autorizado puede leer o
+    // escribir, sin importar que la config de Firebase del cliente sea publica.
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'gscarlos1010@gmail.com';
+    }
+  }
+}
