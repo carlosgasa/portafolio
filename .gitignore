@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .env
+.firebase/
 
 # Datos personales / credenciales - nunca al repo
 /scripts/import-data/
@@ -30,5 +31,4 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
-scripts/extract_ods.py
 scripts/extract_ods.py

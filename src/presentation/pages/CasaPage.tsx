@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Home, Plus, Pencil, Wallet, ArrowUp, ArrowDown } from "lucide-react";
+import { Home, Plus, Pencil, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,10 +26,10 @@ import { StatCard } from "@/presentation/components/StatCard";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
 import { Money } from "@/presentation/components/Money";
+import { SortableTableHead } from "@/presentation/components/SortableTableHead";
 import { useCasaExpenses } from "@/presentation/hooks/useCasaExpenses";
 import type { ExpenseItem } from "@/domain/entities/casa";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
-import { cn } from "@/lib/utils";
 
 const CATEGORIA_SUGERENCIAS = ["Construcción", "Acabados", "Instalaciones", "Mobiliario", "Otros"];
 
@@ -102,30 +102,6 @@ export function CasaPage() {
       setSortKey(key);
       setSortDir(key === "concepto" || key === "categoria" ? "asc" : "desc");
     }
-  }
-
-  function SortableHead({ label, sortableKey, className }: { label: string; sortableKey: SortKey; className?: string }) {
-    const active = sortKey === sortableKey;
-    return (
-      <TableHead className={className}>
-        <button
-          type="button"
-          onClick={() => toggleSort(sortableKey)}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground",
-            active && "text-foreground",
-          )}
-        >
-          {label}
-          {active &&
-            (sortDir === "asc" ? (
-              <ArrowUp className="size-3" />
-            ) : (
-              <ArrowDown className="size-3" />
-            ))}
-        </button>
-      </TableHead>
-    );
   }
 
   return (
@@ -210,12 +186,12 @@ export function CasaPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <SortableHead label="Concepto" sortableKey="concepto" />
-              <SortableHead label="Categoría" sortableKey="categoria" />
-              <SortableHead label="Fecha" sortableKey="fecha" />
-              <SortableHead label="Cantidad" sortableKey="cantidad" className="text-right" />
-              <SortableHead label="Precio unidad" sortableKey="precioUnitario" className="text-right" />
-              <SortableHead label="Total" sortableKey="total" className="text-right" />
+              <SortableTableHead label="Concepto" sortKey="concepto" currentKey={sortKey} direction={sortDir} onSort={toggleSort} />
+              <SortableTableHead label="Categoría" sortKey="categoria" currentKey={sortKey} direction={sortDir} onSort={toggleSort} />
+              <SortableTableHead label="Fecha" sortKey="fecha" currentKey={sortKey} direction={sortDir} onSort={toggleSort} />
+              <SortableTableHead label="Cantidad" sortKey="cantidad" currentKey={sortKey} direction={sortDir} onSort={toggleSort} className="text-right" />
+              <SortableTableHead label="Precio unidad" sortKey="precioUnitario" currentKey={sortKey} direction={sortDir} onSort={toggleSort} className="text-right" />
+              <SortableTableHead label="Total" sortKey="total" currentKey={sortKey} direction={sortDir} onSort={toggleSort} className="text-right" />
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
