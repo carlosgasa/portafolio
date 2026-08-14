@@ -9,6 +9,11 @@ const DashboardPage = lazy(() =>
     default: m.DashboardPage,
   })),
 );
+const CriptoPage = lazy(() =>
+  import("@/presentation/pages/CriptoPage").then((m) => ({
+    default: m.CriptoPage,
+  })),
+);
 
 function PageFallback() {
   return (
@@ -26,7 +31,7 @@ function App() {
           <Routes>
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
-              <Route path="cripto" element={<ComingSoonPage title="Cripto" />} />
+              <Route path="cripto" element={<CriptoPage />} />
               <Route path="bolsa" element={<ComingSoonPage title="Bolsa" />} />
               <Route path="finsus" element={<ComingSoonPage title="Finsus" />} />
               <Route

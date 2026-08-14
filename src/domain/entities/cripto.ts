@@ -5,11 +5,14 @@ export interface CryptoHolding {
   symbol: string;
   nombre: string;
   cantidad: number;
-  costoPromedio: number;
+  /** Lo que costo comprar esta posicion en total (no por unidad). */
+  costoTotal: number;
 }
 
-export interface CryptoPricePoint {
-  fecha: DateOnly;
+/** Ultimo precio conocido de un simbolo (lo sobreescribe la Cloud Function diaria). */
+export interface CryptoPrice {
+  symbol: string;
   precioUsd: number;
   precioMxn: number;
+  fecha: DateOnly;
 }
