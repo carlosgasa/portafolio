@@ -32,7 +32,7 @@ export function TarjetasTab({ api, cards, totalPendiente }: {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <StatCard label="Total pendiente" value={formatCurrency(totalPendiente)} icon={CardIcon} />
+        <StatCard label="Total pendiente" value={formatCurrency(totalPendiente)} icon={CardIcon} gradient="pink" />
         <Dialog open={dialogCard !== null} onOpenChange={(o) => !o && setDialogCard(null)}>
           <DialogTrigger asChild>
             <Button onClick={() => setDialogCard("new")}>

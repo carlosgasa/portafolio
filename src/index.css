@@ -3,6 +3,14 @@
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant data-horizontal (&[data-orientation=horizontal]);
+@custom-variant data-vertical (&[data-orientation=vertical]);
+@custom-variant data-active (&[data-state=active]);
+@custom-variant data-open (&[data-state=open]);
+@custom-variant data-closed (&[data-state=closed]);
+@custom-variant data-disabled (&[data-disabled]);
+@custom-variant data-inset (&[data-inset=true]);
+@custom-variant data-placeholder (&[data-placeholder]);
 
 @theme inline {
   --color-background: var(--background);
@@ -91,6 +99,17 @@
   --chart-4: #b27b00; /* ambar */
   --chart-5: #864ad2; /* violeta */
 
+  /* Gradientes vibrantes para StatCard (estilo dashboard tipo AZORA). Cada
+     variante decorativa (blue/cyan/purple/pink) rota entre tarjetas neutras;
+     positive/negative reusan el hue de --positive/--negative para no romper
+     la semantica de ganancia/perdida ya validada para daltonismo. */
+  --gradient-blue: linear-gradient(135deg, oklch(0.55 0.19 258), oklch(0.3 0.15 262));
+  --gradient-cyan: linear-gradient(135deg, oklch(0.7 0.15 200), oklch(0.38 0.13 205));
+  --gradient-purple: linear-gradient(135deg, oklch(0.58 0.22 300), oklch(0.32 0.18 295));
+  --gradient-pink: linear-gradient(135deg, oklch(0.62 0.23 340), oklch(0.34 0.19 330));
+  --gradient-positive: linear-gradient(135deg, oklch(0.58 0.17 155), oklch(0.32 0.14 155));
+  --gradient-negative: linear-gradient(135deg, oklch(0.6 0.2 345), oklch(0.34 0.18 340));
+
   --sidebar: oklch(0.15 0.03 280);
   --sidebar-foreground: oklch(0.95 0.02 200);
   --sidebar-primary: oklch(0.78 0.17 195);
@@ -106,8 +125,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     min-height: 100dvh;
+    background-color: var(--background);
+    background-image:
+      radial-gradient(ellipse 75% 55% at 15% 0%, oklch(0.4 0.16 260 / 85%), transparent 65%),
+      radial-gradient(ellipse 75% 60% at 100% 100%, oklch(0.38 0.19 330 / 75%), transparent 65%),
+      radial-gradient(ellipse 65% 50% at 90% 0%, oklch(0.4 0.16 200 / 50%), transparent 60%);
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;

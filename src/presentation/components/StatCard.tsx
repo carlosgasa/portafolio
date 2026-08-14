@@ -1,35 +1,42 @@
 import type { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+type StatGradient = "blue" | "cyan" | "purple" | "pink";
 
 interface StatCardProps {
   label: string;
   value: string;
   icon: LucideIcon;
   tone?: "default" | "positive" | "negative";
+  gradient?: StatGradient;
 }
 
-export function StatCard({ label, value, icon: Icon, tone = "default" }: StatCardProps) {
+const GRADIENT_VAR: Record<StatGradient, string> = {
+  blue: "var(--gradient-blue)",
+  cyan: "var(--gradient-cyan)",
+  purple: "var(--gradient-purple)",
+  pink: "var(--gradient-pink)",
+};
+
+export function StatCard({ label, value, icon: Icon, tone = "default", gradient = "blue" }: StatCardProps) {
+  const backgroundImage =
+    tone === "positive"
+      ? "var(--gradient-positive)"
+      : tone === "negative"
+        ? "var(--gradient-negative)"
+        : GRADIENT_VAR[gradient];
+
   return (
-    <Card className="border-border/60 bg-card/60">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "font-mono text-2xl font-semibold tabular-nums",
-            tone === "positive" && "text-positive",
-            tone === "negative" && "text-negative",
-            tone === "default" && "text-foreground",
-          )}
-        >
-          {value}
+    <div
+      className="relative flex flex-col gap-3 overflow-hidden rounded-2xl p-4 text-white shadow-lg"
+      style={{ backgroundImage }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-sm font-medium text-white/80">{label}</span>
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+          <Icon className="size-4 text-white" />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="font-mono text-2xl font-semibold tabular-nums">{value}</div>
+    </div>
   );
 }

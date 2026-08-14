@@ -52,6 +52,7 @@ export function DashboardPage() {
               label="Aporte total"
               value={latest ? formatCurrency(latest.aporteTotal) : "—"}
               icon={PiggyBank}
+              gradient="cyan"
             />
             <StatCard
               label="Rendimiento"

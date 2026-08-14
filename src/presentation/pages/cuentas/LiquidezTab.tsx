@@ -40,7 +40,7 @@ export function LiquidezTab({ api, balances, total }: {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <StatCard label="Disponible a corto plazo" value={formatCurrency(total)} icon={Banknote} />
+        <StatCard label="Disponible a corto plazo" value={formatCurrency(total)} icon={Banknote} gradient="purple" />
         <Dialog open={dialogItem !== null} onOpenChange={(o) => !o && setDialogItem(null)}>
           <DialogTrigger asChild>
             <Button onClick={() => setDialogItem("new")}>

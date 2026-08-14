@@ -47,7 +47,7 @@ export function PersonasTab({ api, persons, totalMeDeben }: {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <StatCard label="Total que me deben" value={formatCurrency(totalMeDeben)} icon={Users} />
+        <StatCard label="Total que me deben" value={formatCurrency(totalMeDeben)} icon={Users} gradient="cyan" />
         <Dialog open={newPersonOpen} onOpenChange={setNewPersonOpen}>
           <DialogTrigger asChild>
             <Button>

@@ -95,6 +95,7 @@ export function BolsaPage() {
               label="Aporte total"
               value={formatCurrency(data?.aporteTotal ?? 0)}
               icon={PiggyBank}
+              gradient="cyan"
             />
             <StatCard
               label="Rendimiento"
