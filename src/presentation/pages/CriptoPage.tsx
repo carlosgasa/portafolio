@@ -23,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { MovementsList } from "@/presentation/components/MovementsList";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
+import { Money } from "@/presentation/components/Money";
 import { useCryptoPortfolio } from "@/presentation/hooks/useCryptoPortfolio";
 import type { CryptoHolding } from "@/domain/entities/cripto";
 import type { CryptoHoldingWithValue } from "@/application/use-cases/cripto/getCryptoPortfolio";
@@ -36,6 +38,7 @@ export function CriptoPage() {
     updateHolding,
     deleteHolding,
     addMovement,
+    updateMovement,
     deleteMovement,
     setPrice,
   } = useCryptoPortfolio();
@@ -58,6 +61,8 @@ export function CriptoPage() {
             Holdings, precios y movimientos
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <HideBalancesButton />
         <Dialog
           open={dialogHolding !== null}
           onOpenChange={(o) => !o && setDialogHolding(null)}
@@ -82,6 +87,7 @@ export function CriptoPage() {
             />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -146,13 +152,13 @@ export function CriptoPage() {
                     {h.cantidad}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {formatCurrency(h.costoTotal)}
+                    <Money value={h.costoTotal} />
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {h.precioMxn !== null ? formatCurrency(h.precioMxn) : "—"}
+                    {h.precioMxn !== null ? <Money value={h.precioMxn} /> : "—"}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {h.valorActual !== null ? formatCurrency(h.valorActual) : "—"}
+                    {h.valorActual !== null ? <Money value={h.valorActual} /> : "—"}
                   </TableCell>
                   <TableCell
                     className={cn(
@@ -160,7 +166,7 @@ export function CriptoPage() {
                       h.ganancia !== null && (h.ganancia >= 0 ? "text-positive" : "text-negative"),
                     )}
                   >
-                    {h.ganancia !== null ? formatCurrency(h.ganancia) : "—"}
+                    {h.ganancia !== null ? <Money value={h.ganancia} /> : "—"}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
@@ -209,6 +215,7 @@ export function CriptoPage() {
       <MovementsList
         movements={data?.movements ?? []}
         onAdd={(m) => addMovement.mutateAsync(m)}
+        onUpdate={(id, patch) => updateMovement.mutateAsync({ id, patch })}
         onDelete={(id) => deleteMovement.mutateAsync(id)}
       />
     </div>

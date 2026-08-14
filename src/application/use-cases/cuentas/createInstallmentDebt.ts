@@ -1,4 +1,5 @@
 import type { ICuentasRepository } from "@/domain/repositories/ICuentasRepository";
+import { addMonths } from "@/shared/utils/dates";
 
 export interface CreateInstallmentDebtInput {
   personaId: string;
@@ -6,12 +7,6 @@ export interface CreateInstallmentDebtInput {
   numCuotas: number;
   montoCuota: number;
   fechaPrimeraCuota: string;
-}
-
-function addMonths(dateOnly: string, months: number): string {
-  const d = new Date(`${dateOnly}T00:00:00`);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
 }
 
 /** Crea la deuda y genera las N cuotas mensuales a partir de la primera fecha. */

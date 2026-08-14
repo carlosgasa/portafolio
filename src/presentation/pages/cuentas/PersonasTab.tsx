@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Users, ChevronRight } from "lucide-react";
+import { Plus, Users, ChevronRight, Pencil, Check, X, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AmountInput } from "@/components/ui/amount-input";
 import {
   Dialog,
   DialogContent,
@@ -19,14 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/presentation/components/StatCard";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { SnapshotHistory } from "@/presentation/components/SnapshotHistory";
+import { Money } from "@/presentation/components/Money";
+import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 import type { useCuentas } from "@/presentation/hooks/useCuentas";
-import type { PersonWithDebts } from "@/application/use-cases/cuentas/getCuentasOverview";
+import type { DebtWithInstallments, PersonWithDebts } from "@/application/use-cases/cuentas/getCuentasOverview";
 import type { CuentasSnapshot, DebtType } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
+import { addMonths, formatMonthLabel } from "@/shared/utils/dates";
 import { cn } from "@/lib/utils";
 
 type CuentasApi = ReturnType<typeof useCuentas>;
@@ -40,12 +52,20 @@ export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
   const [newPersonOpen, setNewPersonOpen] = useState(false);
   const [nombre, setNombre] = useState("");
   const [detailPerson, setDetailPerson] = useState<PersonWithDebts | null>(null);
+  const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
+  const [editPersonNombre, setEditPersonNombre] = useState("");
 
   async function handleAddPerson(e: FormEvent) {
     e.preventDefault();
     await api.addPerson.mutateAsync({ nombre });
     setNombre("");
     setNewPersonOpen(false);
+  }
+
+  async function saveEditPerson(id: string) {
+    if (!editPersonNombre.trim()) return;
+    await api.updatePerson.mutateAsync({ id, patch: { nombre: editPersonNombre } });
+    setEditingPersonId(null);
   }
 
   return (
@@ -96,35 +116,80 @@ export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
         <p className="py-8 text-center text-sm text-muted-foreground">Sin personas todavía.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {persons.map((p) => (
-            <Card key={p.id} className="border-border/60 bg-card/60">
-              <CardContent className="flex items-center justify-between py-4">
-                <button
-                  type="button"
-                  className="flex flex-1 items-center justify-between text-left"
-                  onClick={() => setDetailPerson(p)}
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{p.nombre}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.deudas.length} deuda(s)
-                    </p>
+          {persons.map((p) =>
+            editingPersonId === p.id ? (
+              <Card key={p.id} className="border-border/60 bg-card/60">
+                <CardContent className="flex items-end gap-2 py-4">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Label className="text-xs">Nombre</Label>
+                    <Input
+                      value={editPersonNombre}
+                      onChange={(e) => setEditPersonNombre(e.target.value)}
+                      autoFocus
+                    />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono tabular-nums text-foreground">
-                      {formatCurrency(p.totalMeDebe)}
-                    </span>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </div>
-                </button>
-                <DeleteButton
-                  ariaLabel="Eliminar persona"
-                  className="ml-2"
-                  onConfirm={() => api.deletePerson.mutate(p.id)}
-                />
-              </CardContent>
-            </Card>
-          ))}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-positive hover:text-positive"
+                    aria-label="Guardar"
+                    onClick={() => saveEditPerson(p.id)}
+                  >
+                    <Check className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label="Cancelar"
+                    onClick={() => setEditingPersonId(null)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card key={p.id} className="border-border/60 bg-card/60">
+                <CardContent className="flex items-center justify-between py-4">
+                  <button
+                    type="button"
+                    className="flex flex-1 items-center justify-between text-left"
+                    onClick={() => setDetailPerson(p)}
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{p.nombre}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.deudas.length} deuda(s)
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono tabular-nums text-foreground">
+                        <Money value={p.totalMeDebe} />
+                      </span>
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </div>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-2 size-7"
+                    aria-label="Editar persona"
+                    onClick={() => {
+                      setEditingPersonId(p.id);
+                      setEditPersonNombre(p.nombre);
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <DeleteButton
+                    ariaLabel="Eliminar persona"
+                    className="ml-1"
+                    onConfirm={() => api.deletePerson.mutate(p.id)}
+                  />
+                </CardContent>
+              </Card>
+            ),
+          )}
         </div>
       )}
 
@@ -142,8 +207,153 @@ export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
   );
 }
 
+/** Texto plano con el detalle completo de las deudas de una persona, listo
+ * para compartir (WhatsApp, SMS, etc.) o copiar. Siempre muestra montos
+ * reales sin importar el "ocultar saldos": compartir es una accion explicita
+ * de mostrarle esto a alguien mas. */
+function buildStatementText(person: PersonWithDebts): string {
+  const lines: string[] = [];
+  lines.push(`Estado de cuenta - ${person.nombre}`);
+  lines.push(`Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`);
+  lines.push("");
+  lines.push(`Total pendiente: ${formatCurrency(person.totalMeDebe)}`);
+
+  if (person.deudas.length === 0) {
+    lines.push("");
+    lines.push("Sin deudas registradas.");
+    return lines.join("\n");
+  }
+
+  for (const [i, d] of person.deudas.entries()) {
+    lines.push("");
+    lines.push(`${i + 1}. ${d.descripcion}`);
+    if (d.tipo === "simple") {
+      lines.push(
+        `   ${formatCurrency(d.montoTotal)} · ${formatShortDate(d.fechaCreacion)} · ${d.pagada ? "Pagada" : "Pendiente"}`,
+      );
+    } else {
+      lines.push(`   ${d.numCuotas} cuotas de ${formatCurrency(d.montoCuota ?? 0)}`);
+      const sortedCuotas = [...d.cuotas].sort((a, b) => a.numero - b.numero);
+      for (const c of sortedCuotas) {
+        lines.push(
+          `   Cuota ${c.numero}/${d.numCuotas} · ${formatShortDate(c.fecha)} · ${formatCurrency(c.monto)} · ${c.pagada ? "Pagada" : "Pendiente"}`,
+        );
+      }
+    }
+    lines.push(`   Saldo pendiente: ${formatCurrency(d.saldoPendiente)}`);
+  }
+
+  return lines.join("\n");
+}
+
+/** Version corta: solo la cuota que le toca en el mes objetivo (este mes o
+ * el siguiente) por cada prestamo a plazos, mas las deudas de monto simple
+ * que sigan pendientes (esas no tienen mes, siempre aparecen). Pensado para
+ * mandarlo directo por WhatsApp sin el detalle completo. */
+function buildSimpleStatementText(person: PersonWithDebts, monthOffset: number): string {
+  const lines: string[] = [];
+  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  lines.push(`Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`);
+  lines.push(`Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`);
+  lines.push("");
+
+  let total = 0;
+  let any = false;
+
+  for (const d of person.deudas) {
+    if (d.tipo === "cuotas") {
+      const cuotaDelMes = d.cuotas.find((c) => !c.pagada && c.fecha.slice(0, 7) === targetMonthKey);
+      if (cuotaDelMes) {
+        any = true;
+        total += cuotaDelMes.monto;
+        lines.push(
+          `${d.descripcion}: cuota ${cuotaDelMes.numero}/${d.numCuotas} · ${formatCurrency(cuotaDelMes.monto)}`,
+        );
+      }
+    } else if (!d.pagada) {
+      any = true;
+      total += d.montoTotal;
+      lines.push(`${d.descripcion}: ${formatCurrency(d.montoTotal)}`);
+    }
+  }
+
+  if (!any) {
+    lines.push(`Sin pagos pendientes ${monthOffset === 0 ? "este mes" : "ese mes"}.`);
+  } else {
+    lines.push("");
+    lines.push(`Total: ${formatCurrency(total)}`);
+  }
+
+  return lines.join("\n");
+}
+
+async function shareText(title: string, text: string) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text });
+    } catch (err) {
+      if ((err as Error)?.name !== "AbortError") {
+        toast.error("No se pudo compartir");
+      }
+    }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Copiado al portapapeles");
+  } catch {
+    toast.error("No se pudo copiar");
+  }
+}
+
+function shareStatement(person: PersonWithDebts) {
+  return shareText(`Estado de cuenta - ${person.nombre}`, buildStatementText(person));
+}
+
+function shareSimpleStatement(person: PersonWithDebts, monthOffset: number) {
+  return shareText(`Pagos de ${person.nombre}`, buildSimpleStatementText(person, monthOffset));
+}
+
 function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi }) {
   const [addOpen, setAddOpen] = useState(false);
+  const { isHidden } = useHiddenBalances();
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
+  const [editDescripcion, setEditDescripcion] = useState("");
+  const [editMontoTotal, setEditMontoTotal] = useState("");
+  const [editFecha, setEditFecha] = useState("");
+
+  function startEditDebt(d: DebtWithInstallments) {
+    setEditingDebtId(d.id);
+    setEditDescripcion(d.descripcion);
+    setEditMontoTotal(String(d.montoTotal));
+    setEditFecha(d.fechaCreacion);
+  }
+
+  const editMontoTotalValue = evalAmountExpression(editMontoTotal);
+
+  async function saveEditDebt(d: DebtWithInstallments) {
+    if (editMontoTotalValue === null && d.tipo === "simple") return;
+    if (d.tipo === "simple") {
+      await api.updateDebt.mutateAsync({
+        id: d.id,
+        patch: {
+          descripcion: editDescripcion,
+          montoTotal: editMontoTotalValue as number,
+          fechaCreacion: editFecha,
+        },
+      });
+    } else {
+      await api.updateDebt.mutateAsync({ id: d.id, patch: { descripcion: editDescripcion } });
+      if (editFecha !== d.fechaCreacion) {
+        await api.updateInstallmentDates.mutateAsync({
+          debtId: d.id,
+          cuotas: d.cuotas,
+          fechaInicial: editFecha,
+        });
+      }
+    }
+    setEditingDebtId(null);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -151,7 +361,8 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
         <DialogTitle>Deudas de {person.nombre}</DialogTitle>
       </DialogHeader>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <div className="flex flex-wrap gap-2">
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogTrigger asChild>
           <Button size="sm" variant="secondary" className="self-start">
             <Plus className="size-4" />
@@ -165,44 +376,124 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
             onDone={() => setAddOpen(false)}
           />
         </DialogContent>
-      </Dialog>
+        </Dialog>
+        <Button size="sm" variant="outline" onClick={() => shareStatement(person)}>
+          <Share2 className="size-4" />
+          Compartir estado de cuenta
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline">
+              <Share2 className="size-4" />
+              Compartir pago del mes
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => shareSimpleStatement(person, 0)}>
+              Este mes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareSimpleStatement(person, 1)}>
+              Próximo mes
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {person.deudas.length === 0 ? (
         <p className="py-4 text-center text-sm text-muted-foreground">Sin deudas registradas.</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {person.deudas.map((d) => (
+          {person.deudas.map((d) =>
+            editingDebtId === d.id ? (
+              <li key={d.id} className="flex flex-col gap-2 rounded-md border border-border/60 p-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs">Descripción</Label>
+                  <Input
+                    value={editDescripcion}
+                    onChange={(e) => setEditDescripcion(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Label className="text-xs">
+                      {d.tipo === "cuotas" ? "Fecha inicial" : "Fecha"}
+                    </Label>
+                    <DatePicker value={editFecha} onChange={setEditFecha} />
+                  </div>
+                  {d.tipo === "simple" && (
+                    <div className="flex flex-1 flex-col gap-1.5">
+                      <Label className="text-xs">Monto</Label>
+                      <AmountInput value={editMontoTotal} onChange={setEditMontoTotal} />
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-positive hover:text-positive"
+                    aria-label="Guardar"
+                    disabled={d.tipo === "simple" && editMontoTotalValue === null}
+                    onClick={() => saveEditDebt(d)}
+                  >
+                    <Check className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label="Cancelar"
+                    onClick={() => setEditingDebtId(null)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </li>
+            ) : (
             <li key={d.id} className="rounded-md border border-border/60 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium text-foreground">{d.descripcion}</p>
                   <p className="text-xs text-muted-foreground">
                     {d.tipo === "cuotas"
-                      ? `${d.numCuotas} cuotas de ${formatCurrency(d.montoCuota ?? 0)}`
+                      ? `${d.numCuotas} cuotas de ${isHidden ? "••••••" : formatCurrency(d.montoCuota ?? 0)}`
                       : "Monto simple"}{" "}
                     · {formatShortDate(d.fechaCreacion)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm tabular-nums text-foreground">
-                    {formatCurrency(d.saldoPendiente)}
+                    <Money value={d.saldoPendiente} />
                   </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    aria-label="Editar deuda"
+                    onClick={() => startEditDebt(d)}
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
                   <DeleteButton ariaLabel="Eliminar deuda" onConfirm={() => api.deleteDebt.mutate(d.id)} />
                 </div>
               </div>
 
               {d.tipo === "simple" ? (
-                <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={!!d.pagada}
-                    onChange={(e) =>
-                      api.toggleDebtPaid.mutate({ id: d.id, pagada: e.target.checked })
-                    }
-                    className="accent-primary"
+                <button
+                  type="button"
+                  onClick={() =>
+                    api.toggleDebtPaid.mutate({ id: d.id, pagada: !d.pagada })
+                  }
+                  className="mt-2 flex items-center gap-2 text-left text-xs"
+                >
+                  <span
+                    className={cn(
+                      "size-3 rounded-full border",
+                      d.pagada ? "border-positive bg-positive" : "border-muted-foreground",
+                    )}
                   />
-                  Liquidada
-                </label>
+                  <span className={cn("text-muted-foreground", d.pagada && "line-through")}>
+                    Liquidada
+                  </span>
+                </button>
               ) : (
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {d.cuotas
@@ -211,18 +502,19 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
                       <li key={c.id}>
                         <button
                           type="button"
-                          title={`${formatShortDate(c.fecha)} · ${formatCurrency(c.monto)}`}
+                          title={isHidden ? undefined : formatCurrency(c.monto)}
                           onClick={() =>
                             api.toggleInstallmentPaid.mutate({ id: c.id, pagada: !c.pagada })
                           }
                           className={cn(
-                            "flex size-7 items-center justify-center rounded-full border text-[11px] font-medium",
+                            "flex flex-col items-center justify-center gap-0.5 rounded-md border px-2 py-1 leading-none",
                             c.pagada
                               ? "border-positive bg-positive/20 text-positive"
                               : "border-border text-muted-foreground",
                           )}
                         >
-                          {c.numero}
+                          <span className="text-[11px] font-medium">#{c.numero}</span>
+                          <span className="text-[10px] opacity-80">{formatShortDate(c.fecha)}</span>
                         </button>
                       </li>
                     ))}

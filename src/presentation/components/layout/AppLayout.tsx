@@ -70,7 +70,7 @@ function NavLinks({
 export function AppLayout() {
   const { user, signOutUser } = useAuth();
   const [open, setOpen] = useState(false);
-  const { colors } = useSectionColors();
+  const { colors, setColor, clearColor } = useSectionColors();
   useAutoWeeklySnapshot();
 
   return (
@@ -81,7 +81,13 @@ export function AppLayout() {
         <div className="mt-6 flex-1">
           <NavLinks colors={colors} />
         </div>
-        <UserFooter userLabel={user?.displayName ?? user?.email} onSignOut={signOutUser} />
+        <UserFooter
+          userLabel={user?.displayName ?? user?.email}
+          onSignOut={signOutUser}
+          colors={colors}
+          setColor={setColor}
+          clearColor={clearColor}
+        />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -105,6 +111,9 @@ export function AppLayout() {
                 <UserFooter
                   userLabel={user?.displayName ?? user?.email}
                   onSignOut={signOutUser}
+                  colors={colors}
+                  setColor={setColor}
+                  clearColor={clearColor}
                 />
               </div>
             </SheetContent>
@@ -122,15 +131,21 @@ export function AppLayout() {
 function UserFooter({
   userLabel,
   onSignOut,
+  colors,
+  setColor,
+  clearColor,
 }: {
   userLabel?: string | null;
   onSignOut: () => void;
+  colors: Record<string, string>;
+  setColor: (sectionTo: string, color: string) => void;
+  clearColor: (sectionTo: string) => void;
 }) {
   return (
     <div className="mt-4 flex items-center justify-between gap-1 border-t border-border pt-4">
       <span className="truncate text-xs text-muted-foreground">{userLabel}</span>
       <div className="flex shrink-0 items-center">
-        <SectionColorsEditor />
+        <SectionColorsEditor colors={colors} setColor={setColor} clearColor={clearColor} />
         <Button variant="ghost" size="icon" aria-label="Cerrar sesión" onClick={onSignOut}>
           <LogOut className="size-4" />
         </Button>

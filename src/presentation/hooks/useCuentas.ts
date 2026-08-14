@@ -6,11 +6,13 @@ import {
 } from "@/application/use-cases/cuentas/createInstallmentDebt";
 import { FirestoreCuentasRepository } from "@/infrastructure/firebase/repositories/FirestoreCuentasRepository";
 import { useAuth } from "@/presentation/providers/AuthProvider";
+import { addMonths } from "@/shared/utils/dates";
 import type {
   CardPayment,
   CreditCard,
   CuentasSnapshot,
   Debt,
+  Installment,
   LiquidBalance,
   Person,
 } from "@/domain/entities/cuentas";
@@ -56,6 +58,11 @@ export function useCuentas() {
       repo.updateCardPayment(uid, id, { pagado }),
     onSuccess: invalidate,
   });
+  const updateCardPayment = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<CardPayment, "id">> }) =>
+      repo.updateCardPayment(uid, id, patch),
+    onSuccess: invalidate,
+  });
   const deleteCardPayment = useMutation({
     mutationFn: (id: string) => repo.deleteCardPayment(uid, id),
     onSuccess: invalidate,
@@ -63,6 +70,11 @@ export function useCuentas() {
 
   const addPerson = useMutation({
     mutationFn: (person: Omit<Person, "id">) => repo.addPerson(uid, person),
+    onSuccess: invalidate,
+  });
+  const updatePerson = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Person, "id">> }) =>
+      repo.updatePerson(uid, id, patch),
     onSuccess: invalidate,
   });
   const deletePerson = useMutation({
@@ -81,6 +93,30 @@ export function useCuentas() {
   const toggleDebtPaid = useMutation({
     mutationFn: ({ id, pagada }: { id: string; pagada: boolean }) =>
       repo.updateDebt(uid, id, { pagada }),
+    onSuccess: invalidate,
+  });
+  const updateDebt = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Debt, "id">> }) =>
+      repo.updateDebt(uid, id, patch),
+    onSuccess: invalidate,
+  });
+  const updateInstallmentDates = useMutation({
+    mutationFn: async ({
+      debtId,
+      cuotas,
+      fechaInicial,
+    }: {
+      debtId: string;
+      cuotas: Installment[];
+      fechaInicial: string;
+    }) => {
+      await repo.updateDebt(uid, debtId, { fechaCreacion: fechaInicial });
+      await Promise.all(
+        cuotas.map((c) =>
+          repo.updateInstallment(uid, c.id, { fecha: addMonths(fechaInicial, c.numero - 1) }),
+        ),
+      );
+    },
     onSuccess: invalidate,
   });
   const deleteDebt = useMutation({
@@ -124,12 +160,16 @@ export function useCuentas() {
     deleteCard,
     addCardPayment,
     toggleCardPayment,
+    updateCardPayment,
     deleteCardPayment,
     addPerson,
+    updatePerson,
     deletePerson,
     addSimpleDebt,
     addInstallmentDebt,
     toggleDebtPaid,
+    updateDebt,
+    updateInstallmentDates,
     deleteDebt,
     toggleInstallmentPaid,
     addLiquidBalance,

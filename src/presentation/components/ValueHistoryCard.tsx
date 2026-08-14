@@ -8,12 +8,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AmountInput } from "@/components/ui/amount-input";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { Money } from "@/presentation/components/Money";
+import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 
 export interface ValuePoint {
@@ -37,6 +40,7 @@ interface ValueHistoryCardProps {
   isLoading: boolean;
   valueLabel: string;
   onAdd: (point: { fecha: string; valor: number }) => Promise<unknown>;
+  onUpdate: (id: string, patch: { fecha: string; valor: number }) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
 }
 
@@ -45,11 +49,30 @@ export function ValueHistoryCard({
   isLoading,
   valueLabel,
   onAdd,
+  onUpdate,
   onDelete,
 }: ValueHistoryCardProps) {
   const [open, setOpen] = useState(false);
+  const { isHidden } = useHiddenBalances();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFecha, setEditFecha] = useState("");
+  const [editValor, setEditValor] = useState("");
   const sorted = [...points].sort((a, b) => a.fecha.localeCompare(b.fecha));
   const chartData = sorted.map((p) => ({ ...p, label: formatShortDate(p.fecha) }));
+
+  function startEdit(p: ValuePoint) {
+    setEditingId(p.id);
+    setEditFecha(p.fecha);
+    setEditValor(String(p.valor));
+  }
+
+  const editValorValue = evalAmountExpression(editValor);
+
+  async function saveEdit() {
+    if (!editingId || editValorValue === null) return;
+    await onUpdate(editingId, { fecha: editFecha, valor: editValorValue });
+    setEditingId(null);
+  }
 
   return (
     <Card className="border-border/60 bg-card/60">
@@ -99,10 +122,12 @@ export function ValueHistoryCard({
                 axisLine={false}
                 width={64}
                 tickFormatter={(v: number) =>
-                  new Intl.NumberFormat("es-MX", {
-                    notation: "compact",
-                    compactDisplay: "short",
-                  }).format(v)
+                  isHidden
+                    ? "•••"
+                    : new Intl.NumberFormat("es-MX", {
+                        notation: "compact",
+                        compactDisplay: "short",
+                      }).format(v)
                 }
               />
               <Tooltip
@@ -113,7 +138,7 @@ export function ValueHistoryCard({
                   fontSize: 12,
                 }}
                 labelStyle={{ color: "var(--foreground)" }}
-                formatter={(value) => [formatCurrency(Number(value)), valueLabel]}
+                formatter={(value) => [isHidden ? "••••••" : formatCurrency(Number(value)), valueLabel]}
               />
               <Line
                 type="monotone"
@@ -131,17 +156,58 @@ export function ValueHistoryCard({
 
         {sorted.length > 0 && (
           <ul className="flex max-h-48 flex-col divide-y divide-border/60 overflow-y-auto">
-            {[...sorted].reverse().map((p) => (
-              <li key={p.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-foreground">{formatShortDate(p.fecha)}</span>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono tabular-nums text-foreground">
-                    {formatCurrency(p.valor)}
-                  </span>
-                  <DeleteButton onConfirm={() => onDelete(p.id)} />
-                </div>
-              </li>
-            ))}
+            {[...sorted].reverse().map((p) =>
+              editingId === p.id ? (
+                <li key={p.id} className="flex items-end gap-2 py-2">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Label className="text-xs">Fecha</Label>
+                    <DatePicker value={editFecha} onChange={setEditFecha} />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Label className="text-xs">{valueLabel}</Label>
+                    <AmountInput value={editValor} onChange={setEditValor} />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-positive hover:text-positive"
+                    aria-label="Guardar"
+                    disabled={editValorValue === null}
+                    onClick={saveEdit}
+                  >
+                    <Check className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label="Cancelar"
+                    onClick={() => setEditingId(null)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </li>
+              ) : (
+                <li key={p.id} className="flex items-center justify-between py-2 text-sm">
+                  <span className="text-foreground">{formatShortDate(p.fecha)}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono tabular-nums text-foreground">
+                      <Money value={p.valor} />
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      aria-label="Editar"
+                      onClick={() => startEdit(p)}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <DeleteButton onConfirm={() => onDelete(p.id)} />
+                  </div>
+                </li>
+              ),
+            )}
           </ul>
         )}
       </CardContent>
@@ -159,12 +225,14 @@ function PointForm({
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
   const [valor, setValor] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const valorValue = evalAmountExpression(valor);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (valorValue === null) return;
     setSubmitting(true);
     try {
-      await onSubmit({ fecha, valor: Number(valor) });
+      await onSubmit({ fecha, valor: valorValue });
     } finally {
       setSubmitting(false);
     }
@@ -181,17 +249,10 @@ function PointForm({
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="vp-valor">{valueLabel} (MXN)</Label>
-        <Input
-          id="vp-valor"
-          type="number"
-          step="any"
-          required
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-        />
+        <AmountInput id="vp-valor" required value={valor} onChange={setValor} />
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || valorValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>

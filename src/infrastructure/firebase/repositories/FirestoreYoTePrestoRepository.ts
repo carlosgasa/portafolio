@@ -1,7 +1,7 @@
 import type { IYoTePrestoRepository } from "@/domain/repositories/IYoTePrestoRepository";
 import type { AccountValuePoint } from "@/domain/entities/yotepresto";
 import type { Movement } from "@/domain/entities/common";
-import { addItem, deleteItem, listAll } from "@/infrastructure/firebase/crud";
+import { addItem, deleteItem, listAll, updateItem } from "@/infrastructure/firebase/crud";
 
 const VALUES = "yotePrestoValores";
 const MOVEMENTS = "yotePrestoMovimientos";
@@ -15,6 +15,10 @@ export class FirestoreYoTePrestoRepository implements IYoTePrestoRepository {
     return addItem(uid, VALUES, point).then(() => undefined);
   }
 
+  updateValue(uid: string, id: string, patch: Partial<Omit<AccountValuePoint, "id">>) {
+    return updateItem(uid, VALUES, id, patch);
+  }
+
   deleteValue(uid: string, id: string) {
     return deleteItem(uid, VALUES, id);
   }
@@ -25,6 +29,10 @@ export class FirestoreYoTePrestoRepository implements IYoTePrestoRepository {
 
   addMovement(uid: string, movement: Omit<Movement, "id">) {
     return addItem(uid, MOVEMENTS, movement).then(() => undefined);
+  }
+
+  updateMovement(uid: string, id: string, patch: Partial<Omit<Movement, "id">>) {
+    return updateItem(uid, MOVEMENTS, id, patch);
   }
 
   deleteMovement(uid: string, id: string) {

@@ -31,6 +31,10 @@ export class FirestoreFinsusRepository implements IFinsusRepository {
     return addItem(uid, MOVEMENTS, movement).then(() => undefined);
   }
 
+  updateMovement(uid: string, id: string, patch: Partial<Omit<Movement, "id">>) {
+    return updateItem(uid, MOVEMENTS, id, patch);
+  }
+
   deleteMovement(uid: string, id: string) {
     return deleteItem(uid, MOVEMENTS, id);
   }

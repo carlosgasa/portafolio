@@ -79,6 +79,8 @@ export async function getCuentasOverview(
     snapshots,
     totalTarjetasPendiente: cardsWithPayments.reduce((s, c) => s + c.pendiente, 0),
     totalMeDeben: personsWithDebts.reduce((s, p) => s + p.totalMeDebe, 0),
-    totalLiquidez: liquidBalances.reduce((s, b) => s + b.monto, 0),
+    totalLiquidez: liquidBalances
+      .filter((b) => b.incluido !== false)
+      .reduce((s, b) => s + b.monto, 0),
   };
 }

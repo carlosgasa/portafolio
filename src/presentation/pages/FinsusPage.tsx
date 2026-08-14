@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -26,13 +27,38 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { MovementsList } from "@/presentation/components/MovementsList";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
+import { Money } from "@/presentation/components/Money";
 import { useFinsusPortfolio } from "@/presentation/hooks/useFinsusPortfolio";
 import type { FixedTermAccount } from "@/domain/entities/finsus";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { formatCurrency, formatPercent, formatShortDate } from "@/shared/utils/format";
 
+/** % del plazo (apertura -> vencimiento) que ya transcurrio, 0-100. */
+function progresoPct(a: FixedTermAccount): number {
+  const start = new Date(`${a.fechaApertura}T00:00:00`).getTime();
+  const end = new Date(`${a.fechaVencimiento}T00:00:00`).getTime();
+  const now = Date.now();
+  if (end <= start) return 100;
+  return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+}
+
+/** Todas las inversiones pagan mensual el equivalente al rendimiento; la
+ * tasa siempre es anual. */
+function pagoMensual(a: FixedTermAccount): number {
+  return (a.saldo * (a.tasa / 100)) / 12;
+}
+
 export function FinsusPage() {
-  const { query, addAccount, updateAccount, deleteAccount, addMovement, deleteMovement } =
-    useFinsusPortfolio();
+  const {
+    query,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    addMovement,
+    updateMovement,
+    deleteMovement,
+  } = useFinsusPortfolio();
   const [dialogAccount, setDialogAccount] = useState<FixedTermAccount | "new" | null>(null);
 
   const data = query.data;
@@ -49,6 +75,8 @@ export function FinsusPage() {
             Pagarés a plazo fijo y movimientos
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <HideBalancesButton />
         <Dialog open={dialogAccount !== null} onOpenChange={(o) => !o && setDialogAccount(null)}>
           <DialogTrigger asChild>
             <Button onClick={() => setDialogAccount("new")}>
@@ -70,6 +98,7 @@ export function FinsusPage() {
             />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -105,22 +134,23 @@ export function FinsusPage() {
               <TableHead>Inversión</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
               <TableHead className="text-right">Tasa</TableHead>
-              <TableHead>Plazo</TableHead>
+              <TableHead className="text-right">Pago mensual</TableHead>
               <TableHead>Apertura</TableHead>
               <TableHead>Vence</TableHead>
+              <TableHead className="w-32">Progreso</TableHead>
               <TableHead className="w-32" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {query.isLoading ? (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   <Skeleton className="h-8 w-full" />
                 </TableCell>
               </TableRow>
             ) : data?.accounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   Sin inversiones todavía.
                 </TableCell>
               </TableRow>
@@ -138,15 +168,30 @@ export function FinsusPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {formatCurrency(a.saldo)}
+                    <Money value={a.saldo} />
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{a.tasa}%</TableCell>
-                  <TableCell className="text-muted-foreground">{a.plazo}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">
+                    <Money value={pagoMensual(a)} />
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatShortDate(a.fechaApertura)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatShortDate(a.fechaVencimiento)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${progresoPct(a)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {progresoPct(a).toFixed(0)}%
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
@@ -184,6 +229,7 @@ export function FinsusPage() {
       <MovementsList
         movements={data?.movements ?? []}
         onAdd={(m) => addMovement.mutateAsync(m)}
+        onUpdate={(id, patch) => updateMovement.mutateAsync({ id, patch })}
         onDelete={(id) => deleteMovement.mutateAsync(id)}
       />
     </div>
@@ -200,21 +246,21 @@ function AccountForm({
   const [cuenta, setCuenta] = useState(initial?.cuenta ?? "");
   const [saldo, setSaldo] = useState(String(initial?.saldo ?? ""));
   const [tasa, setTasa] = useState(String(initial?.tasa ?? ""));
-  const [plazo, setPlazo] = useState(initial?.plazo ?? "");
   const today = new Date().toISOString().slice(0, 10);
   const [fechaApertura, setFechaApertura] = useState(initial?.fechaApertura ?? today);
   const [fechaVencimiento, setFechaVencimiento] = useState(initial?.fechaVencimiento ?? today);
   const [submitting, setSubmitting] = useState(false);
+  const saldoValue = evalAmountExpression(saldo);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (saldoValue === null) return;
     setSubmitting(true);
     try {
       await onSubmit({
         cuenta,
-        saldo: Number(saldo),
+        saldo: saldoValue,
         tasa: Number(tasa),
-        plazo,
         fechaApertura,
         fechaVencimiento,
       });
@@ -235,17 +281,10 @@ function AccountForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="f-saldo">Saldo (MXN)</Label>
-          <Input
-            id="f-saldo"
-            type="number"
-            step="any"
-            required
-            value={saldo}
-            onChange={(e) => setSaldo(e.target.value)}
-          />
+          <AmountInput id="f-saldo" required value={saldo} onChange={setSaldo} />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="f-tasa">Tasa (%)</Label>
+          <Label htmlFor="f-tasa">Tasa anual (%)</Label>
           <Input
             id="f-tasa"
             type="number"
@@ -255,10 +294,6 @@ function AccountForm({
             onChange={(e) => setTasa(e.target.value)}
           />
         </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="f-plazo">Plazo</Label>
-        <Input id="f-plazo" value={plazo} onChange={(e) => setPlazo(e.target.value)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
@@ -271,7 +306,7 @@ function AccountForm({
         </div>
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || saldoValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>

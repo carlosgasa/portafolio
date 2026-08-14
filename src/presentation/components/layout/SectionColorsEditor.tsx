@@ -3,14 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { navItems } from "./nav-items";
-import { useSectionColors } from "@/presentation/hooks/useSectionColors";
 import { cn } from "@/lib/utils";
 
-/** Deja elegir un color de acento por seccion del menu (preferencia local,
- * no se guarda en Firestore). Clic de nuevo en el color activo lo quita. */
-export function SectionColorsEditor() {
-  const { colors, setColor, clearColor } = useSectionColors();
+interface SectionColorsEditorProps {
+  colors: Record<string, string>;
+  setColor: (sectionTo: string, color: string) => void;
+  clearColor: (sectionTo: string) => void;
+}
 
+/** Deja elegir un color de acento por seccion del menu (preferencia local,
+ * no se guarda en Firestore). Clic de nuevo en el color activo lo quita.
+ * Recibe el estado de useSectionColors por props para compartir la misma
+ * instancia que pinta el menu (si cada uno llamara al hook por su cuenta,
+ * el menu no se enteraria del cambio hasta recargar la pagina). */
+export function SectionColorsEditor({ colors, setColor, clearColor }: SectionColorsEditorProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>

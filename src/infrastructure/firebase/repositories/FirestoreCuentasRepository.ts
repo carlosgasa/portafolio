@@ -51,6 +51,9 @@ export class FirestoreCuentasRepository implements ICuentasRepository {
   addPerson(uid: string, person: Omit<Person, "id">) {
     return addItem(uid, PERSONS, person).then(() => undefined);
   }
+  updatePerson(uid: string, id: string, patch: Partial<Omit<Person, "id">>) {
+    return updateItem(uid, PERSONS, id, patch);
+  }
   deletePerson(uid: string, id: string) {
     return deleteItem(uid, PERSONS, id);
   }

@@ -23,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { MovementsList } from "@/presentation/components/MovementsList";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
+import { Money } from "@/presentation/components/Money";
 import { useBolsaPortfolio } from "@/presentation/hooks/useBolsaPortfolio";
 import type { StockHolding } from "@/domain/entities/bolsa";
 import type { StockHoldingWithValue } from "@/application/use-cases/bolsa/getBolsaPortfolio";
@@ -36,6 +38,7 @@ export function BolsaPage() {
     updateHolding,
     deleteHolding,
     addMovement,
+    updateMovement,
     deleteMovement,
     setPrice,
   } = useBolsaPortfolio();
@@ -56,6 +59,8 @@ export function BolsaPage() {
             Acciones, ETFs y movimientos
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <HideBalancesButton />
         <Dialog
           open={dialogHolding !== null}
           onOpenChange={(o) => !o && setDialogHolding(null)}
@@ -80,6 +85,7 @@ export function BolsaPage() {
             />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -144,13 +150,13 @@ export function BolsaPage() {
                     {h.cantidad}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {formatCurrency(h.costoTotal)}
+                    <Money value={h.costoTotal} />
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {h.precio !== null ? formatCurrency(h.precio) : "—"}
+                    {h.precio !== null ? <Money value={h.precio} /> : "—"}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {h.valorActual !== null ? formatCurrency(h.valorActual) : "—"}
+                    {h.valorActual !== null ? <Money value={h.valorActual} /> : "—"}
                   </TableCell>
                   <TableCell
                     className={cn(
@@ -158,7 +164,7 @@ export function BolsaPage() {
                       h.ganancia !== null && (h.ganancia >= 0 ? "text-positive" : "text-negative"),
                     )}
                   >
-                    {h.ganancia !== null ? formatCurrency(h.ganancia) : "—"}
+                    {h.ganancia !== null ? <Money value={h.ganancia} /> : "—"}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
@@ -207,6 +213,7 @@ export function BolsaPage() {
       <MovementsList
         movements={data?.movements ?? []}
         onAdd={(m) => addMovement.mutateAsync(m)}
+        onUpdate={(id, patch) => updateMovement.mutateAsync({ id, patch })}
         onDelete={(id) => deleteMovement.mutateAsync(id)}
       />
     </div>

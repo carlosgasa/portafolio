@@ -9,6 +9,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { Money } from "@/presentation/components/Money";
+import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 import type { CuentasSnapshot, SnapshotDetalleItem, SnapshotTipo } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 
@@ -36,6 +38,7 @@ export function SnapshotHistory({
   const [open, setOpen] = useState(false);
   const [taking, setTaking] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { isHidden } = useHiddenBalances();
 
   const own = snapshots.filter((s) => s.tipo === tipo).sort((a, b) => b.fecha.localeCompare(a.fecha));
 
@@ -74,7 +77,9 @@ export function SnapshotHistory({
           onClick={handleTake}
         >
           <Camera className="size-4" />
-          {taking ? "Guardando…" : `Tomar snapshot de hoy (${formatCurrency(currentTotal)})`}
+          {taking
+            ? "Guardando…"
+            : `Tomar snapshot de hoy (${isHidden ? "••••••" : formatCurrency(currentTotal)})`}
         </Button>
 
         {own.length === 0 ? (
@@ -102,7 +107,7 @@ export function SnapshotHistory({
                     </button>
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-sm tabular-nums text-foreground">
-                        {formatCurrency(s.total)}
+                        <Money value={s.total} />
                       </span>
                       <DeleteButton ariaLabel="Eliminar snapshot" onConfirm={() => onDelete(s.id)} />
                     </div>
@@ -119,7 +124,7 @@ export function SnapshotHistory({
                           >
                             <span className="text-muted-foreground">{d.nombre}</span>
                             <span className="font-mono tabular-nums text-foreground">
-                              {formatCurrency(d.monto)}
+                              <Money value={d.monto} />
                             </span>
                           </li>
                         ))

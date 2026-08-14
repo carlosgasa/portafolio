@@ -13,5 +13,6 @@ export interface IFinsusRepository {
 
   listMovements(uid: string): Promise<Movement[]>;
   addMovement(uid: string, movement: Omit<Movement, "id">): Promise<void>;
+  updateMovement(uid: string, id: string, patch: Partial<Omit<Movement, "id">>): Promise<void>;
   deleteMovement(uid: string, id: string): Promise<void>;
 }

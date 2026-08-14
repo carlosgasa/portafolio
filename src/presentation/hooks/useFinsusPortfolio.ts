@@ -44,10 +44,24 @@ export function useFinsusPortfolio() {
     onSuccess: invalidate,
   });
 
+  const updateMovement = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Movement, "id">> }) =>
+      repo.updateMovement(uid, id, patch),
+    onSuccess: invalidate,
+  });
+
   const deleteMovement = useMutation({
     mutationFn: (id: string) => repo.deleteMovement(uid, id),
     onSuccess: invalidate,
   });
 
-  return { query, addAccount, updateAccount, deleteAccount, addMovement, deleteMovement };
+  return {
+    query,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    addMovement,
+    updateMovement,
+    deleteMovement,
+  };
 }

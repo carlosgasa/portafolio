@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 
 type StatGradient = "blue" | "cyan" | "purple" | "pink";
 
@@ -18,6 +19,7 @@ const GRADIENT_VAR: Record<StatGradient, string> = {
 };
 
 export function StatCard({ label, value, icon: Icon, tone = "default", gradient = "blue" }: StatCardProps) {
+  const { isHidden } = useHiddenBalances();
   const backgroundImage =
     tone === "positive"
       ? "var(--gradient-positive)"
@@ -36,7 +38,9 @@ export function StatCard({ label, value, icon: Icon, tone = "default", gradient 
           <Icon className="size-4 text-white" />
         </div>
       </div>
-      <div className="font-mono text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="font-mono text-2xl font-semibold tabular-nums">
+        {isHidden ? "••••••" : value}
+      </div>
     </div>
   );
 }

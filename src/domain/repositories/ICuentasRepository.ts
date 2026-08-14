@@ -25,6 +25,7 @@ export interface ICuentasRepository {
 
   listPersons(uid: string): Promise<Person[]>;
   addPerson(uid: string, person: Omit<Person, "id">): Promise<void>;
+  updatePerson(uid: string, id: string, patch: Partial<Omit<Person, "id">>): Promise<void>;
   deletePerson(uid: string, id: string): Promise<void>;
 
   listDebts(uid: string): Promise<Debt[]>;

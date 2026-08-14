@@ -52,7 +52,10 @@ export interface LiquidBalance {
   nombre: string;
   monto: number;
   tipo: LiquidBalanceType;
-  fecha: DateOnly;
+  /** Si esta en false, no cuenta en el total disponible (default true). */
+  incluido?: boolean;
+  /** Color de acento elegido por el usuario (hex). */
+  color?: string;
 }
 
 export type SnapshotTipo = "tarjetas" | "personas" | "liquidez";

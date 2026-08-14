@@ -1,6 +1,7 @@
 import { Wallet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
 import { useCuentas } from "@/presentation/hooks/useCuentas";
 import { TarjetasTab } from "@/presentation/pages/cuentas/TarjetasTab";
 import { PersonasTab } from "@/presentation/pages/cuentas/PersonasTab";
@@ -12,14 +13,17 @@ export function CuentasPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
-          <Wallet className="size-6 text-primary" />
-          Cuentas
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Tarjetas, personas que te deben y liquidez de corto plazo
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+            <Wallet className="size-6 text-primary" />
+            Cuentas
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Tarjetas, personas que te deben y liquidez de corto plazo
+          </p>
+        </div>
+        <HideBalancesButton />
       </div>
 
       {api.query.isLoading || !data ? (

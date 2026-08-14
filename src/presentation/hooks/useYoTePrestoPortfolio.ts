@@ -28,6 +28,12 @@ export function useYoTePrestoPortfolio() {
     onSuccess: invalidate,
   });
 
+  const updateValue = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<AccountValuePoint, "id">> }) =>
+      repo.updateValue(uid, id, patch),
+    onSuccess: invalidate,
+  });
+
   const deleteValue = useMutation({
     mutationFn: (id: string) => repo.deleteValue(uid, id),
     onSuccess: invalidate,
@@ -38,10 +44,24 @@ export function useYoTePrestoPortfolio() {
     onSuccess: invalidate,
   });
 
+  const updateMovement = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Movement, "id">> }) =>
+      repo.updateMovement(uid, id, patch),
+    onSuccess: invalidate,
+  });
+
   const deleteMovement = useMutation({
     mutationFn: (id: string) => repo.deleteMovement(uid, id),
     onSuccess: invalidate,
   });
 
-  return { query, addValue, deleteValue, addMovement, deleteMovement };
+  return {
+    query,
+    addValue,
+    updateValue,
+    deleteValue,
+    addMovement,
+    updateMovement,
+    deleteMovement,
+  };
 }

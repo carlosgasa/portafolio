@@ -44,6 +44,12 @@ export function useBolsaPortfolio() {
     onSuccess: invalidate,
   });
 
+  const updateMovement = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<Movement, "id">> }) =>
+      repo.updateMovement(uid, id, patch),
+    onSuccess: invalidate,
+  });
+
   const deleteMovement = useMutation({
     mutationFn: (id: string) => repo.deleteMovement(uid, id),
     onSuccess: invalidate,
@@ -60,6 +66,7 @@ export function useBolsaPortfolio() {
     updateHolding,
     deleteHolding,
     addMovement,
+    updateMovement,
     deleteMovement,
     setPrice,
   };

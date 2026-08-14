@@ -24,6 +24,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/presentation/components/StatCard";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
+import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
+import { Money } from "@/presentation/components/Money";
 import { useCasaExpenses } from "@/presentation/hooks/useCasaExpenses";
 import type { ExpenseItem } from "@/domain/entities/casa";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
@@ -136,6 +138,8 @@ export function CasaPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Gasto de construcción</p>
         </div>
+        <div className="flex items-center gap-2">
+        <HideBalancesButton />
         <Dialog open={dialogItem !== null} onOpenChange={(o) => !o && setDialogItem(null)}>
           <DialogTrigger asChild>
             <Button onClick={() => setDialogItem("new")}>
@@ -157,6 +161,7 @@ export function CasaPage() {
             />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,20rem)_1fr]">
@@ -185,7 +190,7 @@ export function CasaPage() {
                       {c.nombre}
                     </span>
                     <span className="font-mono tabular-nums text-muted-foreground">
-                      {formatCurrency(c.monto)} · {c.pct.toFixed(0)}%
+                      <Money value={c.monto} /> · {c.pct.toFixed(0)}%
                     </span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -241,10 +246,10 @@ export function CasaPage() {
                     {e.cantidad}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {formatCurrency(e.precioUnitario)}
+                    <Money value={e.precioUnitario} />
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {formatCurrency(e.total)}
+                    <Money value={e.total} />
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">

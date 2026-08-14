@@ -32,6 +32,10 @@ export class FirestoreCryptoRepository implements ICryptoRepository {
     return addItem(uid, MOVEMENTS, movement).then(() => undefined);
   }
 
+  updateMovement(uid: string, id: string, patch: Partial<Omit<Movement, "id">>) {
+    return updateItem(uid, MOVEMENTS, id, patch);
+  }
+
   deleteMovement(uid: string, id: string) {
     return deleteItem(uid, MOVEMENTS, id);
   }

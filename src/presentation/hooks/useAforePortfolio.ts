@@ -26,12 +26,21 @@ export function useAforePortfolio() {
     onSuccess: invalidate,
   });
 
+  const updateBalance = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<AforeBalancePoint, "id">> }) =>
+      repo.updateBalance(uid, id, patch),
+    onSuccess: invalidate,
+  });
+
   const deleteBalance = useMutation({
     mutationFn: (id: string) => repo.deleteBalance(uid, id),
     onSuccess: invalidate,
   });
 
-  const latest = [...(query.data ?? [])].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  const sorted = [...(query.data ?? [])].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const latest = sorted[0];
+  const previous = sorted[1];
+  const first = sorted.at(-1);
 
-  return { query, addBalance, deleteBalance, latest };
+  return { query, addBalance, updateBalance, deleteBalance, latest, previous, first };
 }

@@ -13,6 +13,7 @@ import { Wallet, TrendingUp, PiggyBank } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
+import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
 import { usePortfolioHistory } from "@/presentation/hooks/usePortfolioHistory";
 import { useAforePortfolio } from "@/presentation/hooks/useAforePortfolio";
 import { useBolsaPortfolio } from "@/presentation/hooks/useBolsaPortfolio";
@@ -93,11 +94,14 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Resumen general del portafolio
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Resumen general del portafolio
+          </p>
+        </div>
+        <HideBalancesButton />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
