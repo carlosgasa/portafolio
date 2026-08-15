@@ -8,6 +8,7 @@ import App from "./App.tsx";
 import { AuthProvider } from "@/presentation/providers/AuthProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ErrorBoundary } from "@/presentation/components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
@@ -21,7 +22,9 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
             <Toaster richColors />
           </TooltipProvider>
         </AuthProvider>

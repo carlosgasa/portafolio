@@ -26,7 +26,7 @@ export function SectionColorsEditor({ colors, setColor, clearColor }: SectionCol
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80">
         <p className="mb-1 text-sm font-medium text-foreground">Color por sección</p>
-        <ul className="flex max-h-96 flex-col divide-y divide-border/60 overflow-y-auto">
+        <ul className="flex max-h-[min(24rem,var(--radix-popover-content-available-height,24rem))] touch-pan-y flex-col divide-y divide-border/60 overflow-y-auto overscroll-contain">
           {navItems.map((item) => {
             const current = colors[item.to];
             return (

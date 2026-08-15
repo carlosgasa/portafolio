@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Menu, LogOut, Zap } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -8,6 +8,7 @@ import { navItems } from "./nav-items";
 import { SectionColorsEditor } from "./SectionColorsEditor";
 import { ThemeToggle } from "@/presentation/components/ThemeToggle";
 import { BackupDialog } from "@/presentation/components/BackupDialog";
+import { BrandMark } from "@/presentation/components/BrandMark";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useAutoWeeklySnapshot } from "@/presentation/hooks/useAutoWeeklySnapshot";
 import { useSectionColors } from "@/presentation/hooks/useSectionColors";
@@ -15,7 +16,7 @@ import { useSectionColors } from "@/presentation/hooks/useSectionColors";
 function Brand() {
   return (
     <div className="flex items-center gap-2 px-2 py-1">
-      <Zap className="size-6 text-primary" />
+      <BrandMark className="size-6" />
       <span className="text-lg font-semibold tracking-wide text-foreground">
         Portafolio
       </span>
