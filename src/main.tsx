@@ -16,6 +16,19 @@ const queryClient = new QueryClient({
   }),
 });
 
+/** registerType: "autoUpdate" activa el service worker nuevo en segundo
+ * plano, pero no recarga la pestaña ya abierta por si sola — sin esto, una
+ * pestaña abierta antes de un deploy se queda mostrando el codigo viejo
+ * indefinidamente (aunque siga sirviendo, sin errores, solo desactualizado). */
+if ("serviceWorker" in navigator) {
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloaded) return;
+    reloaded = true;
+    window.location.reload();
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
