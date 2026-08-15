@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { navItems } from "./nav-items";
 import { SectionColorsEditor } from "./SectionColorsEditor";
+import { ThemeToggle } from "@/presentation/components/ThemeToggle";
+import { BackupDialog } from "@/presentation/components/BackupDialog";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useAutoWeeklySnapshot } from "@/presentation/hooks/useAutoWeeklySnapshot";
 import { useSectionColors } from "@/presentation/hooks/useSectionColors";
@@ -92,8 +94,7 @@ export function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar de móvil */}
-        <header className="flex items-center justify-between border-b border-border bg-card/40 px-4 py-3 md:hidden">
-          <Brand />
+        <header className="flex items-center gap-2 border-b border-border bg-card/40 px-4 py-3 md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Abrir menú">
@@ -118,6 +119,7 @@ export function AppLayout() {
               </div>
             </SheetContent>
           </Sheet>
+          <Brand />
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -146,6 +148,8 @@ function UserFooter({
       <span className="truncate text-xs text-muted-foreground">{userLabel}</span>
       <div className="flex shrink-0 items-center">
         <SectionColorsEditor colors={colors} setColor={setColor} clearColor={clearColor} />
+        <BackupDialog />
+        <ThemeToggle />
         <Button variant="ghost" size="icon" aria-label="Cerrar sesión" onClick={onSignOut}>
           <LogOut className="size-4" />
         </Button>

@@ -3,6 +3,7 @@ import { Plus, Pencil, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AmountInput } from "@/components/ui/amount-input";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ import { Money } from "@/presentation/components/Money";
 import type { useCuentas } from "@/presentation/hooks/useCuentas";
 import type { CuentasSnapshot, LiquidBalance, LiquidBalanceType } from "@/domain/entities/cuentas";
 import { formatCurrency } from "@/shared/utils/format";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { cn } from "@/lib/utils";
 
@@ -155,12 +157,14 @@ function LiquidForm({
   const [tipo, setTipo] = useState<LiquidBalanceType>(initial?.tipo ?? "ahorro");
   const [color, setColor] = useState(initial?.color ?? COLOR_PRESETS[0]);
   const [submitting, setSubmitting] = useState(false);
+  const montoValue = evalAmountExpression(monto);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (montoValue === null) return;
     setSubmitting(true);
     try {
-      await onSubmit({ nombre, monto: Number(monto), tipo, color });
+      await onSubmit({ nombre, monto: montoValue, tipo, color });
     } finally {
       setSubmitting(false);
     }
@@ -178,14 +182,7 @@ function LiquidForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="l-monto">Monto (MXN)</Label>
-          <Input
-            id="l-monto"
-            type="number"
-            step="any"
-            required
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-          />
+          <AmountInput id="l-monto" required value={monto} onChange={setMonto} />
         </div>
         <div className="flex flex-col gap-2">
           <Label>Tipo</Label>
@@ -219,7 +216,7 @@ function LiquidForm({
         </div>
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || montoValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AmountInput } from "@/components/ui/amount-input";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ import { SortableTableHead } from "@/presentation/components/SortableTableHead";
 import { useCasaExpenses } from "@/presentation/hooks/useCasaExpenses";
 import type { ExpenseItem } from "@/domain/entities/casa";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 
 const CATEGORIA_SUGERENCIAS = ["Construcción", "Acabados", "Instalaciones", "Mobiliario", "Otros"];
 
@@ -264,13 +266,15 @@ function ExpenseForm({
   const [precioUnitario, setPrecioUnitario] = useState(String(initial?.precioUnitario ?? ""));
   const [fecha, setFecha] = useState(initial?.fecha ?? new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const precioValue = evalAmountExpression(precioUnitario);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (precioValue === null) return;
     setSubmitting(true);
     try {
       const cant = Number(cantidad);
-      const precio = Number(precioUnitario);
+      const precio = precioValue;
       await onSubmit({
         concepto,
         cantidad: cant,
@@ -327,14 +331,7 @@ function ExpenseForm({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="c-precio">Precio unidad (MXN)</Label>
-          <Input
-            id="c-precio"
-            type="number"
-            step="any"
-            required
-            value={precioUnitario}
-            onChange={(e) => setPrecioUnitario(e.target.value)}
-          />
+          <AmountInput id="c-precio" required value={precioUnitario} onChange={setPrecioUnitario} />
         </div>
       </div>
       <div className="flex flex-col gap-2">
@@ -342,7 +339,7 @@ function ExpenseForm({
         <DatePicker id="c-fecha" value={fecha} onChange={setFecha} />
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || precioValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>

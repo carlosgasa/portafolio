@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -105,7 +105,13 @@ export function ValueHistoryCard({
           </p>
         ) : (
           <ResponsiveContainer width="100%" height={224}>
-            <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
+            <AreaChart data={chartData} margin={{ left: 8, right: 8 }}>
+              <defs>
+                <linearGradient id="gradValueHistory" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"
@@ -140,17 +146,18 @@ export function ValueHistoryCard({
                 labelStyle={{ color: "var(--foreground)" }}
                 formatter={(value) => [isHidden ? "••••••" : formatCurrency(Number(value)), valueLabel]}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="valor"
                 name={valueLabel}
                 stroke="var(--chart-1)"
                 strokeWidth={2}
                 strokeLinecap="round"
+                fill="url(#gradValueHistory)"
                 dot={false}
                 activeDot={{ r: 5 }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         )}
 
@@ -160,12 +167,16 @@ export function ValueHistoryCard({
               editingId === p.id ? (
                 <li key={p.id} className="flex items-end gap-2 py-2">
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <Label className="text-xs">Fecha</Label>
-                    <DatePicker value={editFecha} onChange={setEditFecha} />
+                    <Label htmlFor={`vh-fecha-${p.id}`} className="text-xs">
+                      Fecha
+                    </Label>
+                    <DatePicker id={`vh-fecha-${p.id}`} value={editFecha} onChange={setEditFecha} />
                   </div>
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <Label className="text-xs">{valueLabel}</Label>
-                    <AmountInput value={editValor} onChange={setEditValor} />
+                    <Label htmlFor={`vh-valor-${p.id}`} className="text-xs">
+                      {valueLabel}
+                    </Label>
+                    <AmountInput id={`vh-valor-${p.id}`} value={editValor} onChange={setEditValor} />
                   </div>
                   <Button
                     variant="ghost"

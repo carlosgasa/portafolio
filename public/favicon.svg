@@ -1,4 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="22" fill="#0a0a12" />
-  <polygon points="59.86,35.55 47.96,50.85 53.06,50.85 40.14,64.45 52.04,49.15 46.94,49.15" fill="#00d7d9" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="rc"><rect width="512" height="512" rx="115" ry="115"/></clipPath>
+    <radialGradient id="b" cx="18%" cy="8%" r="75%">
+      <stop offset="0%" stop-color="#5647c9" stop-opacity="0.95"/>
+      <stop offset="65%" stop-color="#5647c9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="m" cx="98%" cy="100%" r="80%">
+      <stop offset="0%" stop-color="#c93fb8" stop-opacity="0.85"/>
+      <stop offset="65%" stop-color="#c93fb8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="c" cx="92%" cy="4%" r="65%">
+      <stop offset="0%" stop-color="#2fb9c9" stop-opacity="0.6"/>
+      <stop offset="60%" stop-color="#2fb9c9" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mk" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5ff2ff"/>
+      <stop offset="55%" stop-color="#00c8ff"/>
+      <stop offset="100%" stop-color="#ff33d6"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g clip-path="url(#rc)">
+    <rect width="512" height="512" fill="#0c0e1d"/>
+    <rect width="512" height="512" fill="url(#b)"/>
+    <rect width="512" height="512" fill="url(#m)"/>
+    <rect width="512" height="512" fill="url(#c)"/>
+  </g>
+  <g filter="url(#glow)">
+    <rect x="132" y="266" width="64" height="140" rx="16" fill="url(#mk)"/>
+    <rect x="224" y="196" width="64" height="210" rx="16" fill="url(#mk)"/>
+    <rect x="316" y="116" width="64" height="290" rx="16" fill="url(#mk)"/>
+  </g>
 </svg>

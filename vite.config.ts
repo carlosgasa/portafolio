@@ -16,8 +16,8 @@ export default defineConfig({
         short_name: "Portafolio",
         lang: "es",
         description: "Control personal de inversiones y estados de cuenta",
-        theme_color: "#0a0a12",
-        background_color: "#0a0a12",
+        theme_color: "#0c0e1d",
+        background_color: "#0c0e1d",
         display: "standalone",
         start_url: "/",
         icons: [

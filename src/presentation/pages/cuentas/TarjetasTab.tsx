@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Plus, Pencil, Check, X, CreditCard as CardIcon, CalendarClock, Share2 } from "lucide-react";
+import { Plus, Pencil, Check, X, CreditCard as CardIcon, CalendarClock, Share2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ import type { CardWithPayments } from "@/application/use-cases/cuentas/getCuenta
 import type { CardPayment, CreditCard, CuentasSnapshot } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
-import { addMonths, formatMonthLabel } from "@/shared/utils/dates";
+import { addMonths, currentWeekRange, formatMonthLabel, toDateOnly } from "@/shared/utils/dates";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +54,37 @@ function cardPagosDelMes(card: CardWithPayments, targetMonthKey: string): CardPa
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
+/** Semanas lunes-domingo que tocan el mes dado, recortadas a sus limites
+ * (la primera y ultima semana pueden quedar parciales). */
+function weeksOfMonth(monthKey: string): { start: string; end: string }[] {
+  const [y, m] = monthKey.split("-").map(Number);
+  const first = new Date(y, m - 1, 1);
+  const last = new Date(y, m, 0);
+  const weeks: { start: string; end: string }[] = [];
+  let cursor = new Date(first);
+  while (cursor <= last) {
+    const dow = cursor.getDay();
+    const diffToMonday = dow === 0 ? 6 : dow - 1;
+    const weekStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - diffToMonday);
+    const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+    weeks.push({
+      start: toDateOnly(weekStart < first ? first : weekStart),
+      end: toDateOnly(weekEnd > last ? last : weekEnd),
+    });
+    cursor = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate() + 1);
+  }
+  return weeks;
+}
+
+const weekDayFormatter = new Intl.DateTimeFormat("es-MX", { day: "numeric" });
+const weekMonthFormatter = new Intl.DateTimeFormat("es-MX", { month: "short" });
+
+function formatWeekRange(start: string, end: string): string {
+  const s = new Date(`${start}T00:00:00`);
+  const e = new Date(`${end}T00:00:00`);
+  return `${weekDayFormatter.format(s)}–${weekDayFormatter.format(e)} ${weekMonthFormatter.format(e)}`;
+}
+
 /** Texto para compartir: pagos pendientes de una tarjeta en el mes objetivo
  * (este o el siguiente), listo para WhatsApp/copiar. */
 function buildCardStatementText(card: CardWithPayments, monthOffset: number): string {
@@ -72,14 +103,14 @@ function buildCardStatementText(card: CardWithPayments, monthOffset: number): st
     let total = 0;
     for (const p of pagosDelMes) {
       total += p.monto;
-      lines.push(`${formatShortDate(p.fecha)}: ${formatCurrency(p.monto)}`);
+      lines.push(`${formatShortDate(p.fecha)}: ${formatCurrency(p.monto, 2)}`);
     }
     lines.push("");
-    lines.push(`Total del mes: ${formatCurrency(total)}`);
+    lines.push(`Total del mes: ${formatCurrency(total, 2)}`);
   }
 
   lines.push("");
-  lines.push(`Pendiente total de la tarjeta: ${formatCurrency(card.pendiente)}`);
+  lines.push(`Pendiente total de la tarjeta: ${formatCurrency(card.pendiente, 2)}`);
 
   return lines.join("\n");
 }
@@ -105,9 +136,9 @@ function buildAllCardsStatementText(cards: CardWithPayments[], monthOffset: numb
     let subtotal = 0;
     for (const p of pagosDelMes) {
       subtotal += p.monto;
-      lines.push(`  ${formatShortDate(p.fecha)}: ${formatCurrency(p.monto)}`);
+      lines.push(`  ${formatShortDate(p.fecha)}: ${formatCurrency(p.monto, 2)}`);
     }
-    lines.push(`  Subtotal: ${formatCurrency(subtotal)}`);
+    lines.push(`  Subtotal: ${formatCurrency(subtotal, 2)}`);
     lines.push("");
     grandTotal += subtotal;
   }
@@ -115,7 +146,7 @@ function buildAllCardsStatementText(cards: CardWithPayments[], monthOffset: numb
   if (!any) {
     lines.push(`Sin pagos pendientes ${monthOffset === 0 ? "este mes" : "ese mes"}.`);
   } else {
-    lines.push(`Total general: ${formatCurrency(grandTotal)}`);
+    lines.push(`Total general: ${formatCurrency(grandTotal, 2)}`);
   }
 
   return lines.join("\n");
@@ -148,35 +179,19 @@ function shareAllCardsStatement(cards: CardWithPayments[], monthOffset: number) 
   return shareText("Pagos de tarjetas", buildAllCardsStatementText(cards, monthOffset));
 }
 
-function toDateOnly(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** Lunes a domingo de la semana en la que estamos hoy. */
-function currentWeekRange(): { start: string; end: string } {
-  const now = new Date();
-  const dow = now.getDay(); // 0=domingo..6=sabado
-  const diffToMonday = dow === 0 ? 6 : dow - 1;
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday);
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
-  return { start: toDateOnly(monday), end: toDateOnly(sunday) };
-}
-
-export function TarjetasTab({ api, cards, totalPendiente, snapshots }: {
+export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquidez }: {
   api: CuentasApi;
   cards: CardWithPayments[];
   totalPendiente: number;
   snapshots: CuentasSnapshot[];
+  totalLiquidez: number;
 }) {
   const [dialogCard, setDialogCard] = useState<CreditCard | "new" | null>(null);
   const [paymentsCardId, setPaymentsCardId] = useState<string | null>(null);
   const paymentsCard = cards.find((c) => c.id === paymentsCardId) ?? null;
   const { start: weekStart, end: weekEnd } = currentWeekRange();
-  const weekTotal = cards
-    .flatMap((c) => c.pagos)
+  const allPending = cards.flatMap((c) => c.pagos);
+  const weekTotal = allPending
     .filter((p) => !p.pagado && p.fecha >= weekStart && p.fecha <= weekEnd)
     .reduce((s, p) => s + p.monto, 0);
 
@@ -187,16 +202,37 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots }: {
   }));
   const totalMesActual = cardsMonthDetalle.reduce((s, c) => s + c.monto, 0);
 
+  const nextMonthKey = addMonths(new Date().toISOString().slice(0, 10), 1).slice(0, 7);
+  const nextMonthTotal = allPending
+    .filter((p) => !p.pagado && p.fecha.slice(0, 7) === nextMonthKey)
+    .reduce((s, p) => s + p.monto, 0);
+
+  const cubreLiquidez = totalLiquidez >= weekTotal;
+
+  const monthWeeks = weeksOfMonth(currentMonthKey).map((w) => ({
+    ...w,
+    isCurrent: w.start === weekStart,
+    total: allPending
+      .filter((p) => !p.pagado && p.fecha >= w.start && p.fecha <= w.end)
+      .reduce((s, p) => s + p.monto, 0),
+  }));
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">
-          <StatCard label="Total pendiente" value={formatCurrency(totalPendiente)} icon={CardIcon} gradient="pink" />
+          <StatCard label="Total pendiente" value={formatCurrency(totalPendiente, 2)} icon={CardIcon} gradient="pink" />
           <StatCard
-            label="Próximos pagos (esta semana)"
-            value={formatCurrency(weekTotal)}
+            label={`Próximos pagos (${formatMonthLabel(nextMonthKey)})`}
+            value={formatCurrency(nextMonthTotal, 2)}
             icon={CalendarClock}
-            gradient="purple"
+            gradient="blue"
+          />
+          <StatCard
+            label="Liquidez disponible"
+            value={formatCurrency(totalLiquidez, 2)}
+            icon={Wallet}
+            tone={cubreLiquidez ? "positive" : "negative"}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -248,6 +284,33 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots }: {
           </Dialog>
         </div>
       </div>
+
+      <Card className="border-border/60 bg-card/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Pagos por semana ({formatMonthLabel(currentMonthKey)})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {monthWeeks.map((w) => (
+            <div
+              key={w.start}
+              className={cn(
+                "flex flex-col gap-0.5 rounded-lg border px-3 py-2",
+                w.isCurrent ? "border-primary/50 bg-primary/10" : "border-border/60",
+              )}
+            >
+              <span className="text-[11px] text-muted-foreground">
+                {formatWeekRange(w.start, w.end)}
+                {w.isCurrent && " · esta semana"}
+              </span>
+              <span className="font-mono text-sm tabular-nums text-foreground">
+                <Money value={w.total} decimals={2} />
+              </span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       {cards.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Sin tarjetas todavía.</p>

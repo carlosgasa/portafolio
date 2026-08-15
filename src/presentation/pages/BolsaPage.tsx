@@ -3,6 +3,8 @@ import { TrendingUp, Plus, Pencil, Wallet, PiggyBank, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AmountInput } from "@/components/ui/amount-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,7 @@ import { useBolsaPortfolio } from "@/presentation/hooks/useBolsaPortfolio";
 import type { StockHolding } from "@/domain/entities/bolsa";
 import type { StockHoldingWithValue } from "@/application/use-cases/bolsa/getBolsaPortfolio";
 import { formatCurrency, formatPercent } from "@/shared/utils/format";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { cn } from "@/lib/utils";
 
 export function BolsaPage() {
@@ -232,16 +235,18 @@ function HoldingForm({
   const [cantidad, setCantidad] = useState(String(initial?.cantidad ?? ""));
   const [costoTotal, setCostoTotal] = useState(String(initial?.costoTotal ?? ""));
   const [submitting, setSubmitting] = useState(false);
+  const costoTotalValue = evalAmountExpression(costoTotal);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (costoTotalValue === null) return;
     setSubmitting(true);
     try {
       await onSubmit({
         ticker: ticker.toUpperCase(),
         nombre,
         cantidad: Number(cantidad),
-        costoTotal: Number(costoTotal),
+        costoTotal: costoTotalValue,
       });
     } finally {
       setSubmitting(false);
@@ -275,18 +280,11 @@ function HoldingForm({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="s-costo">Costo total de compra (MXN)</Label>
-          <Input
-            id="s-costo"
-            type="number"
-            step="any"
-            required
-            value={costoTotal}
-            onChange={(e) => setCostoTotal(e.target.value)}
-          />
+          <AmountInput id="s-costo" required value={costoTotal} onChange={setCostoTotal} />
         </div>
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || costoTotalValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>
@@ -302,16 +300,19 @@ function PriceForm({
   onSubmit: (price: { ticker: string; precio: number; fecha: string }) => Promise<void>;
 }) {
   const [precio, setPrecio] = useState("");
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const precioValue = evalAmountExpression(precio);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (precioValue === null) return;
     setSubmitting(true);
     try {
       await onSubmit({
         ticker,
-        precio: Number(precio),
-        fecha: new Date().toISOString().slice(0, 10),
+        precio: precioValue,
+        fecha,
       });
     } finally {
       setSubmitting(false);
@@ -325,18 +326,14 @@ function PriceForm({
       </DialogHeader>
       <div className="flex flex-col gap-2">
         <Label htmlFor="p-precio">Precio actual (MXN)</Label>
-        <Input
-          id="p-precio"
-          type="number"
-          step="any"
-          required
-          autoFocus
-          value={precio}
-          onChange={(e) => setPrecio(e.target.value)}
-        />
+        <AmountInput id="p-precio" required autoFocus value={precio} onChange={setPrecio} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="p-fecha">Fecha</Label>
+        <DatePicker id="p-fecha" value={fecha} onChange={setFecha} />
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || precioValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>

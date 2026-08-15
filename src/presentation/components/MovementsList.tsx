@@ -26,9 +26,10 @@ interface MovementsListProps {
   onAdd: (movement: Omit<Movement, "id">) => Promise<unknown>;
   onUpdate: (id: string, patch: Partial<Omit<Movement, "id">>) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
+  decimals?: 2;
 }
 
-export function MovementsList({ movements, onAdd, onUpdate, onDelete }: MovementsListProps) {
+export function MovementsList({ movements, onAdd, onUpdate, onDelete, decimals }: MovementsListProps) {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFecha, setEditFecha] = useState("");
@@ -86,18 +87,28 @@ export function MovementsList({ movements, onAdd, onUpdate, onDelete }: Movement
                 <li key={m.id} className="flex flex-col gap-2 py-2">
                   <div className="flex items-end gap-2">
                     <div className="flex flex-1 flex-col gap-1.5">
-                      <Label className="text-xs">Fecha</Label>
-                      <DatePicker value={editFecha} onChange={setEditFecha} />
+                      <Label htmlFor={`mov-fecha-${m.id}`} className="text-xs">
+                        Fecha
+                      </Label>
+                      <DatePicker id={`mov-fecha-${m.id}`} value={editFecha} onChange={setEditFecha} />
                     </div>
                     <div className="flex flex-1 flex-col gap-1.5">
-                      <Label className="text-xs">Monto</Label>
-                      <AmountInput value={editMonto} onChange={setEditMonto} />
+                      <Label htmlFor={`mov-monto-${m.id}`} className="text-xs">
+                        Monto
+                      </Label>
+                      <AmountInput id={`mov-monto-${m.id}`} value={editMonto} onChange={setEditMonto} />
                     </div>
                   </div>
                   <div className="flex items-end gap-2">
                     <div className="flex flex-1 flex-col gap-1.5">
-                      <Label className="text-xs">Nota</Label>
-                      <Input value={editNota} onChange={(e) => setEditNota(e.target.value)} />
+                      <Label htmlFor={`mov-nota-${m.id}`} className="text-xs">
+                        Nota
+                      </Label>
+                      <Input
+                        id={`mov-nota-${m.id}`}
+                        value={editNota}
+                        onChange={(e) => setEditNota(e.target.value)}
+                      />
                     </div>
                     <Button
                       variant="ghost"
@@ -133,7 +144,7 @@ export function MovementsList({ movements, onAdd, onUpdate, onDelete }: Movement
                         m.monto >= 0 ? "text-positive" : "text-negative",
                       )}
                     >
-                      <Money value={m.monto} />
+                      <Money value={m.monto} decimals={decimals} />
                     </span>
                     <Button
                       variant="ghost"

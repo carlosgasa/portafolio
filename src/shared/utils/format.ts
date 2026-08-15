@@ -1,12 +1,6 @@
 const currencyFormatter = new Intl.NumberFormat("es-MX", {
   style: "currency",
   currency: "MXN",
-  maximumFractionDigits: 0,
-});
-
-const currencyFormatterDecimals = new Intl.NumberFormat("es-MX", {
-  style: "currency",
-  currency: "MXN",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -22,8 +16,10 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   year: "numeric",
 });
 
-export function formatCurrency(value: number, decimals?: 2): string {
-  return decimals === 2 ? currencyFormatterDecimals.format(value) : currencyFormatter.format(value);
+/** El segundo argumento se acepta por compatibilidad con llamadas
+ * existentes; los decimales ya son el comportamiento default en toda la app. */
+export function formatCurrency(value: number, _decimals?: 2): string {
+  return currencyFormatter.format(value);
 }
 
 export function formatPercent(value: number): string {

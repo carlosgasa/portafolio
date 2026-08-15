@@ -1,26 +1,36 @@
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Wallet, TrendingUp, PiggyBank } from "lucide-react";
+import { Wallet, TrendingUp, PiggyBank, Scale, Download, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/presentation/components/StatCard";
 import { HideBalancesButton } from "@/presentation/components/HideBalancesButton";
+import { Money } from "@/presentation/components/Money";
 import { usePortfolioHistory } from "@/presentation/hooks/usePortfolioHistory";
 import { useAforePortfolio } from "@/presentation/hooks/useAforePortfolio";
 import { useBolsaPortfolio } from "@/presentation/hooks/useBolsaPortfolio";
 import { useCryptoPortfolio } from "@/presentation/hooks/useCryptoPortfolio";
 import { useFinsusPortfolio } from "@/presentation/hooks/useFinsusPortfolio";
 import { useYoTePrestoPortfolio } from "@/presentation/hooks/useYoTePrestoPortfolio";
+import { useCuentas } from "@/presentation/hooks/useCuentas";
 import { formatCurrency, formatPercent, formatShortDate } from "@/shared/utils/format";
+import { currentWeekRange } from "@/shared/utils/dates";
 
 /** Claves tal como las escribe la Cloud Function weeklySnapshot en porInstrumento. */
 const RENDIMIENTO_INSTRUMENTS = [
@@ -30,6 +40,28 @@ const RENDIMIENTO_INSTRUMENTS = [
   { key: "YoTePresto", label: "YoTePresto", color: "var(--chart-4)" },
 ];
 
+/** Color fijo por instrumento (no por posicion en el arreglo, que se
+ * reordena por valor): asi una porcion no cambia de color al variar montos. */
+const INSTRUMENT_COLORS: Record<string, string> = {
+  AFORE: "var(--chart-1)",
+  Bolsa: "var(--chart-2)",
+  Cripto: "var(--chart-3)",
+  Finsus: "var(--chart-4)",
+  YoTePresto: "var(--chart-5)",
+};
+
+/** Instrumentos para el area apilada de balances historicos (incluye AFORE,
+ * a diferencia de RENDIMIENTO_INSTRUMENTS, porque su balance si tiene
+ * sentido graficar aunque no se pueda medir rendimiento). Colores
+ * consistentes con INSTRUMENT_COLORS (usados en la grafica de pastel). */
+const BALANCE_INSTRUMENTS = [
+  { key: "AFORE", label: "AFORE", color: INSTRUMENT_COLORS.AFORE },
+  { key: "Bolsa", label: "Bolsa", color: INSTRUMENT_COLORS.Bolsa },
+  { key: "Criptos", label: "Cripto", color: INSTRUMENT_COLORS.Cripto },
+  { key: "Finsus", label: "Finsus", color: INSTRUMENT_COLORS.Finsus },
+  { key: "YoTePresto", label: "YoTePresto", color: INSTRUMENT_COLORS.YoTePresto },
+];
+
 export function DashboardPage() {
   const { data, isLoading } = usePortfolioHistory();
   const afore = useAforePortfolio();
@@ -37,8 +69,8 @@ export function DashboardPage() {
   const cripto = useCryptoPortfolio();
   const finsus = useFinsusPortfolio();
   const yotepresto = useYoTePrestoPortfolio();
+  const cuentas = useCuentas();
 
-  const latest = data?.latest;
   const chartData = (data?.snapshots ?? []).map((s) => ({
     fecha: s.fecha,
     label: formatShortDate(s.fecha),
@@ -77,6 +109,28 @@ export function DashboardPage() {
     },
   ].sort((a, b) => b.valor - a.valor);
 
+  const pieData = breakdownData.filter((d) => d.valor > 0);
+
+  const valorTotalLive = breakdownData.reduce((s, d) => s + d.valor, 0);
+  const aporteTotalLive = breakdownData.reduce((s, d) => s + d.aporte, 0);
+  const rendimientoLive =
+    aporteTotalLive !== 0 ? (valorTotalLive - aporteTotalLive) / Math.abs(aporteTotalLive) : 0;
+
+  const cuentasData = cuentas.query.data;
+  const patrimonioNeto =
+    valorTotalLive +
+    (cuentasData?.totalLiquidez ?? 0) +
+    (cuentasData?.totalMeDeben ?? 0) -
+    (cuentasData?.totalTarjetasPendiente ?? 0);
+
+  const { start: weekStart, end: weekEnd } = currentWeekRange();
+  const pagosSemana = (cuentasData?.cards ?? [])
+    .flatMap((c) => c.pagos)
+    .filter((p) => !p.pagado && p.fecha >= weekStart && p.fecha <= weekEnd)
+    .reduce((s, p) => s + p.monto, 0);
+  const liquidezInsuficiente =
+    !cuentas.query.isLoading && pagosSemana > 0 && pagosSemana > (cuentasData?.totalLiquidez ?? 0);
+
   const snapshotsConDesglose = (data?.snapshots ?? []).filter(
     (s) => s.porInstrumento && Object.keys(s.porInstrumento).length > 0,
   );
@@ -92,6 +146,29 @@ export function DashboardPage() {
     return entry;
   });
 
+  const balanceData = snapshotsConDesglose.map((s) => {
+    const entry: { fecha: string; label: string } & Record<string, number | string> = {
+      fecha: s.fecha,
+      label: formatShortDate(s.fecha),
+    };
+    for (const { key } of BALANCE_INSTRUMENTS) {
+      entry[key] = s.porInstrumento[key]?.valor ?? 0;
+    }
+    return entry;
+  });
+
+  function handleExport() {
+    const csv = buildDashboardReportCsv({
+      valorTotal: valorTotalLive,
+      aporteTotal: aporteTotalLive,
+      rendimiento: rendimientoLive,
+      patrimonioNeto,
+      breakdown: breakdownData,
+      history: chartData,
+    });
+    downloadCsv(`reporte-portafolio-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
@@ -100,12 +177,38 @@ export function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             Resumen general del portafolio
           </p>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Scale className="size-3.5" />
+            Patrimonio neto:{" "}
+            <span className="font-mono tabular-nums text-foreground">
+              <Money value={patrimonioNeto} decimals={2} />
+            </span>
+          </p>
         </div>
-        <HideBalancesButton />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="size-4" />
+            Exportar
+          </Button>
+          <HideBalancesButton />
+        </div>
       </div>
 
+      {liquidezInsuficiente && (
+        <div className="flex items-center gap-3 rounded-lg border border-negative/40 bg-negative/10 px-4 py-3 text-sm text-foreground">
+          <AlertTriangle className="size-4 shrink-0 text-negative" />
+          <p>
+            Tus pagos de tarjeta de esta semana ({formatCurrency(pagosSemana, 2)}) superan tu
+            liquidez disponible ({formatCurrency(cuentasData?.totalLiquidez ?? 0, 2)}).{" "}
+            <Link to="/cuentas" className="underline underline-offset-2">
+              Ver Cuentas
+            </Link>
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-3">
-        {isLoading ? (
+        {breakdownLoading ? (
           <>
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
@@ -115,22 +218,20 @@ export function DashboardPage() {
           <>
             <StatCard
               label="Valor total"
-              value={latest ? formatCurrency(latest.valorTotal) : "—"}
+              value={formatCurrency(valorTotalLive, 2)}
               icon={Wallet}
             />
             <StatCard
               label="Aporte total"
-              value={latest ? formatCurrency(latest.aporteTotal) : "—"}
+              value={formatCurrency(aporteTotalLive, 2)}
               icon={PiggyBank}
               gradient="cyan"
             />
             <StatCard
               label="Rendimiento"
-              value={latest ? formatPercent(latest.rendimiento) : "—"}
+              value={formatPercent(rendimientoLive)}
               icon={TrendingUp}
-              tone={
-                latest && latest.rendimiento >= 0 ? "positive" : "negative"
-              }
+              tone={rendimientoLive >= 0 ? "positive" : "negative"}
             />
           </>
         )}
@@ -153,7 +254,17 @@ export function DashboardPage() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={288}>
-              <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
+              <AreaChart data={chartData} margin={{ left: 8, right: 8 }}>
+                <defs>
+                  <linearGradient id="gradValor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradAporte" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid
                   vertical={false}
                   stroke="var(--border)"
@@ -181,27 +292,29 @@ export function DashboardPage() {
                   }
                 />
                 <Tooltip content={<ChartTooltip />} />
-                <Line
+                <Area
                   type="monotone"
                   dataKey="valor"
                   name="Valor"
                   stroke="var(--chart-1)"
                   strokeWidth={2}
                   strokeLinecap="round"
+                  fill="url(#gradValor)"
                   dot={false}
                   activeDot={{ r: 5 }}
                 />
-                <Line
+                <Area
                   type="monotone"
                   dataKey="aporte"
                   name="Aporte"
                   stroke="var(--chart-2)"
                   strokeWidth={2}
                   strokeLinecap="round"
+                  fill="url(#gradAporte)"
                   dot={false}
                   activeDot={{ r: 5 }}
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           )}
           {chartData.length > 0 && <ChartLegend />}
@@ -210,25 +323,38 @@ export function DashboardPage() {
 
       <Card className="border-border/60 bg-card/60">
         <CardHeader>
-          <CardTitle className="text-base">Valor y aporte por instrumento</CardTitle>
+          <CardTitle className="text-base">Balance por instrumento (histórico)</CardTitle>
         </CardHeader>
         <CardContent>
-          {breakdownLoading ? (
+          {isLoading ? (
             <Skeleton className="h-72 w-full" />
-          ) : breakdownData.every((d) => d.valor === 0 && d.aporte === 0) ? (
+          ) : balanceData.length === 0 ? (
             <div className="flex h-72 flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
-              <p>Todavía no hay datos en ningún instrumento.</p>
+              <p>Todavía no hay historial por instrumento.</p>
+              <p>
+                Se va guardando cada semana a partir de ahora, junto con el
+                snapshot general.
+              </p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={288}>
-              <BarChart data={breakdownData} margin={{ left: 8, right: 8 }}>
+              <AreaChart data={balanceData} margin={{ left: 8, right: 8 }}>
+                <defs>
+                  {BALANCE_INSTRUMENTS.map((inst) => (
+                    <linearGradient key={inst.key} id={`gradBalance-${inst.key}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={inst.color} stopOpacity={0.8} />
+                      <stop offset="95%" stopColor={inst.color} stopOpacity={0.25} />
+                    </linearGradient>
+                  ))}
+                </defs>
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="instrumento"
+                  dataKey="label"
                   stroke="var(--muted-foreground)"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
+                  minTickGap={32}
                 />
                 <YAxis
                   stroke="var(--muted-foreground)"
@@ -243,15 +369,141 @@ export function DashboardPage() {
                     }).format(v)
                   }
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.3 }} />
-                <Bar dataKey="valor" name="Valor" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="aporte" name="Aporte" fill="var(--chart-2)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              </BarChart>
+                <Tooltip content={<StackedBalanceTooltip />} />
+                {BALANCE_INSTRUMENTS.map((inst) => (
+                  <Area
+                    key={inst.key}
+                    type="monotone"
+                    dataKey={inst.key}
+                    name={inst.label}
+                    stackId="balance"
+                    stroke={inst.color}
+                    fill={`url(#gradBalance-${inst.key})`}
+                    strokeWidth={1.5}
+                  />
+                ))}
+              </AreaChart>
             </ResponsiveContainer>
           )}
-          <ChartLegend />
+          {balanceData.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+              {BALANCE_INSTRUMENTS.map((inst) => (
+                <span key={inst.key} className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full" style={{ background: inst.color }} />
+                  {inst.label}
+                </span>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="border-border/60 bg-card/60 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Valor y aporte por instrumento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdownLoading ? (
+              <Skeleton className="h-72 w-full" />
+            ) : breakdownData.every((d) => d.valor === 0 && d.aporte === 0) ? (
+              <div className="flex h-72 flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                <p>Todavía no hay datos en ningún instrumento.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={288}>
+                <BarChart data={breakdownData} margin={{ left: 8, right: 8 }}>
+                  <defs>
+                    <linearGradient id="gradBarValor" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1} />
+                      <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.45} />
+                    </linearGradient>
+                    <linearGradient id="gradBarAporte" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={1} />
+                      <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.45} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="instrumento"
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    width={64}
+                    tickFormatter={(v: number) =>
+                      new Intl.NumberFormat("es-MX", {
+                        notation: "compact",
+                        compactDisplay: "short",
+                      }).format(v)
+                    }
+                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.3 }} />
+                  <Bar dataKey="valor" name="Valor" fill="url(#gradBarValor)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Bar dataKey="aporte" name="Aporte" fill="url(#gradBarAporte)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+            <ChartLegend />
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 bg-card/60 lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-base">Distribución del portafolio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdownLoading ? (
+              <Skeleton className="h-72 w-full" />
+            ) : pieData.length === 0 ? (
+              <div className="flex h-72 flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                <p>Todavía no hay datos en ningún instrumento.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={288}>
+                <PieChart>
+                  <Tooltip content={<PieChartTooltip total={valorTotalLive} />} />
+                  <Pie
+                    data={pieData}
+                    dataKey="valor"
+                    nameKey="instrumento"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    strokeWidth={2}
+                    stroke="var(--card)"
+                    label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {pieData.map((entry) => (
+                      <Cell key={entry.instrumento} fill={INSTRUMENT_COLORS[entry.instrumento]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            {pieData.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                {pieData.map((d) => (
+                  <span key={d.instrumento} className="flex items-center gap-1.5">
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ background: INSTRUMENT_COLORS[d.instrumento] }}
+                    />
+                    {d.instrumento}
+                  </span>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="border-border/60 bg-card/60">
         <CardHeader>
@@ -375,6 +627,62 @@ function PercentChartTooltip({
   );
 }
 
+function StackedBalanceTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const total = payload.reduce((s, item) => s + item.value, 0);
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1 font-medium text-foreground">{label}</p>
+      {[...payload].reverse().map((item) => (
+        <div key={item.dataKey} className="flex items-center gap-2">
+          <span className="size-2 rounded-full" style={{ background: item.color }} />
+          <span className="text-muted-foreground">{item.name}:</span>
+          <span className="font-mono tabular-nums text-foreground">
+            {formatCurrency(item.value)}
+          </span>
+        </div>
+      ))}
+      <div className="mt-1 flex items-center gap-2 border-t border-border pt-1">
+        <span className="text-muted-foreground">Total:</span>
+        <span className="font-mono tabular-nums text-foreground">{formatCurrency(total)}</span>
+      </div>
+    </div>
+  );
+}
+
+function PieChartTooltip({
+  active,
+  payload,
+  total,
+}: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  total: number;
+}) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0];
+  const pct = total !== 0 ? item.value / total : 0;
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-lg">
+      <div className="flex items-center gap-2">
+        <span className="size-2 rounded-full" style={{ background: INSTRUMENT_COLORS[item.name] }} />
+        <span className="font-medium text-foreground">{item.name}</span>
+      </div>
+      <p className="mt-1 font-mono tabular-nums text-foreground">
+        {formatCurrency(item.value)} ({formatPercent(pct)})
+      </p>
+    </div>
+  );
+}
+
 function ChartTooltip({
   active,
   payload,
@@ -402,4 +710,53 @@ function ChartTooltip({
       ))}
     </div>
   );
+}
+
+function csvEscape(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+function buildDashboardReportCsv(params: {
+  valorTotal: number;
+  aporteTotal: number;
+  rendimiento: number;
+  patrimonioNeto: number;
+  breakdown: { instrumento: string; valor: number; aporte: number }[];
+  history: { fecha: string; valor: number; aporte: number }[];
+}): string {
+  const lines: string[] = [];
+  lines.push("Reporte de portafolio");
+  lines.push(`Generado,${new Date().toISOString().slice(0, 10)}`);
+  lines.push("");
+  lines.push("Resumen");
+  lines.push("Concepto,Monto");
+  lines.push(`Valor total,${params.valorTotal.toFixed(2)}`);
+  lines.push(`Aporte total,${params.aporteTotal.toFixed(2)}`);
+  lines.push(`Rendimiento,${(params.rendimiento * 100).toFixed(2)}%`);
+  lines.push(`Patrimonio neto,${params.patrimonioNeto.toFixed(2)}`);
+  lines.push("");
+  lines.push("Por instrumento");
+  lines.push("Instrumento,Valor,Aporte");
+  for (const b of params.breakdown) {
+    lines.push(`${csvEscape(b.instrumento)},${b.valor.toFixed(2)},${b.aporte.toFixed(2)}`);
+  }
+  lines.push("");
+  lines.push("Histórico semanal");
+  lines.push("Fecha,Valor,Aporte");
+  for (const h of params.history) {
+    lines.push(`${h.fecha},${h.valor.toFixed(2)},${h.aporte.toFixed(2)}`);
+  }
+  return lines.join("\n");
+}
+
+function downloadCsv(filename: string, content: string) {
+  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

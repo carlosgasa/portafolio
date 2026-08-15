@@ -1,4 +1,4 @@
-import { PiggyBank, Wallet, TrendingUp, CalendarClock } from "lucide-react";
+import { PiggyBank, Wallet, CalendarClock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/presentation/components/StatCard";
 import { ValueHistoryCard } from "@/presentation/components/ValueHistoryCard";
@@ -7,14 +7,8 @@ import { useAforePortfolio } from "@/presentation/hooks/useAforePortfolio";
 import { formatCurrency, formatPercent } from "@/shared/utils/format";
 
 export function AforePage() {
-  const { query, addBalance, updateBalance, deleteBalance, latest, previous, first } =
+  const { query, addBalance, updateBalance, deleteBalance, latest, previous } =
     useAforePortfolio();
-
-  const crecimientoTotal = latest && first ? latest.saldo - first.saldo : null;
-  const crecimientoTotalPct =
-    crecimientoTotal !== null && first && first.saldo !== 0
-      ? crecimientoTotal / Math.abs(first.saldo)
-      : null;
 
   const crecimientoPeriodo = latest && previous ? latest.saldo - previous.saldo : null;
   const crecimientoPeriodoPct =
@@ -35,27 +29,15 @@ export function AforePage() {
         <HideBalancesButton />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {query.isLoading ? (
           <>
-            <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
           </>
         ) : (
           <>
             <StatCard label="Saldo actual" value={formatCurrency(latest?.saldo ?? 0)} icon={Wallet} />
-            <StatCard
-              label="Crecimiento total"
-              value={
-                crecimientoTotal !== null
-                  ? `${formatCurrency(crecimientoTotal)} (${formatPercent(crecimientoTotalPct ?? 0)})`
-                  : "—"
-              }
-              icon={TrendingUp}
-              gradient="cyan"
-              tone={crecimientoTotal === null ? "default" : crecimientoTotal >= 0 ? "positive" : "negative"}
-            />
             <StatCard
               label="Último período"
               value={

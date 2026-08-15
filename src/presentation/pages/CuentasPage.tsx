@@ -41,6 +41,7 @@ export function CuentasPage() {
               cards={data.cards}
               totalPendiente={data.totalTarjetasPendiente}
               snapshots={data.snapshots}
+              totalLiquidez={data.totalLiquidez}
             />
           </TabsContent>
           <TabsContent value="personas" className="mt-4">

@@ -121,8 +121,11 @@ export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
               <Card key={p.id} className="border-border/60 bg-card/60">
                 <CardContent className="flex items-end gap-2 py-4">
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <Label className="text-xs">Nombre</Label>
+                    <Label htmlFor={`person-nombre-${p.id}`} className="text-xs">
+                      Nombre
+                    </Label>
                     <Input
+                      id={`person-nombre-${p.id}`}
                       value={editPersonNombre}
                       onChange={(e) => setEditPersonNombre(e.target.value)}
                       autoFocus
@@ -407,23 +410,28 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
             editingDebtId === d.id ? (
               <li key={d.id} className="flex flex-col gap-2 rounded-md border border-border/60 p-3">
                 <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs">Descripción</Label>
+                  <Label htmlFor={`debt-desc-${d.id}`} className="text-xs">
+                    Descripción
+                  </Label>
                   <Input
+                    id={`debt-desc-${d.id}`}
                     value={editDescripcion}
                     onChange={(e) => setEditDescripcion(e.target.value)}
                   />
                 </div>
                 <div className="flex items-end gap-2">
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <Label className="text-xs">
+                    <Label htmlFor={`debt-fecha-${d.id}`} className="text-xs">
                       {d.tipo === "cuotas" ? "Fecha inicial" : "Fecha"}
                     </Label>
-                    <DatePicker value={editFecha} onChange={setEditFecha} />
+                    <DatePicker id={`debt-fecha-${d.id}`} value={editFecha} onChange={setEditFecha} />
                   </div>
                   {d.tipo === "simple" && (
                     <div className="flex flex-1 flex-col gap-1.5">
-                      <Label className="text-xs">Monto</Label>
-                      <AmountInput value={editMontoTotal} onChange={setEditMontoTotal} />
+                      <Label htmlFor={`debt-monto-${d.id}`} className="text-xs">
+                        Monto
+                      </Label>
+                      <AmountInput id={`debt-monto-${d.id}`} value={editMontoTotal} onChange={setEditMontoTotal} />
                     </div>
                   )}
                   <Button
@@ -544,9 +552,13 @@ function DebtForm({
   const [montoCuota, setMontoCuota] = useState("");
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const montoTotalValue = evalAmountExpression(montoTotal);
+  const montoCuotaValue = evalAmountExpression(montoCuota);
+  const canSubmit = tipo === "simple" ? montoTotalValue !== null : montoCuotaValue !== null;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!canSubmit) return;
     setSubmitting(true);
     try {
       if (tipo === "simple") {
@@ -554,7 +566,7 @@ function DebtForm({
           personaId,
           tipo: "simple",
           descripcion,
-          montoTotal: Number(montoTotal),
+          montoTotal: montoTotalValue as number,
           fechaCreacion: fecha,
           pagada: false,
         });
@@ -563,7 +575,7 @@ function DebtForm({
           personaId,
           descripcion,
           numCuotas: Number(numCuotas),
-          montoCuota: Number(montoCuota),
+          montoCuota: montoCuotaValue as number,
           fechaPrimeraCuota: fecha,
         });
       }
@@ -605,14 +617,7 @@ function DebtForm({
       {tipo === "simple" ? (
         <div className="flex flex-col gap-2">
           <Label htmlFor="d-monto">Monto (MXN)</Label>
-          <Input
-            id="d-monto"
-            type="number"
-            step="any"
-            required
-            value={montoTotal}
-            onChange={(e) => setMontoTotal(e.target.value)}
-          />
+          <AmountInput id="d-monto" required value={montoTotal} onChange={setMontoTotal} />
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
@@ -629,14 +634,7 @@ function DebtForm({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="d-montocuota">Monto por cuota</Label>
-            <Input
-              id="d-montocuota"
-              type="number"
-              step="any"
-              required
-              value={montoCuota}
-              onChange={(e) => setMontoCuota(e.target.value)}
-            />
+            <AmountInput id="d-montocuota" required value={montoCuota} onChange={setMontoCuota} />
           </div>
         </div>
       )}
@@ -649,7 +647,7 @@ function DebtForm({
       </div>
 
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || !canSubmit}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>

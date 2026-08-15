@@ -50,6 +50,14 @@ function pagoMensual(a: FixedTermAccount): number {
   return (a.saldo * (a.tasa / 100)) / 12;
 }
 
+/** Dias restantes hasta el vencimiento (negativo si ya paso). */
+function diasRestantes(a: FixedTermAccount): number {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const end = new Date(`${a.fechaVencimiento}T00:00:00`).getTime();
+  return Math.round((end - today) / 86_400_000);
+}
+
 type SortKey = "cuenta" | "saldo" | "tasa" | "pagoMensual" | "fechaApertura" | "fechaVencimiento" | "progreso";
 
 export function FinsusPage() {
@@ -152,10 +160,10 @@ export function FinsusPage() {
           </>
         ) : (
           <>
-            <StatCard label="Saldo total" value={formatCurrency(data?.valorTotal ?? 0)} icon={Wallet} />
+            <StatCard label="Saldo total" value={formatCurrency(data?.valorTotal ?? 0, 2)} icon={Wallet} />
             <StatCard
               label="Aporte total"
-              value={formatCurrency(data?.aporteTotal ?? 0)}
+              value={formatCurrency(data?.aporteTotal ?? 0, 2)}
               icon={PiggyBank}
               gradient="cyan"
             />
@@ -208,15 +216,24 @@ export function FinsusPage() {
                   <TableCell className="font-medium text-foreground">
                     <div className="flex items-center gap-2">
                       {a.cuenta}
-                      {a.vencida && (
+                      {a.vencida ? (
                         <Badge variant="outline" className="text-[10px]">
                           Vencida
                         </Badge>
+                      ) : (
+                        diasRestantes(a) >= 0 && diasRestantes(a) <= 7 && (
+                          <Badge
+                            variant="outline"
+                            className="border-[color-mix(in_oklch,var(--chart-4)_50%,transparent)] text-[10px] text-[var(--chart-4)]"
+                          >
+                            Por vencer
+                          </Badge>
+                        )
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    <Money value={a.saldo} />
+                    <Money value={a.saldo} decimals={2} />
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{a.tasa}%</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
@@ -226,20 +243,18 @@ export function FinsusPage() {
                     {formatShortDate(a.fechaApertura)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatShortDate(a.fechaVencimiento)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${progresoPct(a)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {progresoPct(a).toFixed(0)}%
-                      </span>
+                    <div>{formatShortDate(a.fechaVencimiento)}</div>
+                    <div className="text-xs">
+                      {(() => {
+                        const dias = diasRestantes(a);
+                        if (dias > 0) return `Faltan ${dias} día${dias === 1 ? "" : "s"}`;
+                        if (dias === 0) return "Vence hoy";
+                        return `Venció hace ${-dias} día${dias === -1 ? "" : "s"}`;
+                      })()}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {progresoPct(a).toFixed(0)}%
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
@@ -279,6 +294,7 @@ export function FinsusPage() {
         onAdd={(m) => addMovement.mutateAsync(m)}
         onUpdate={(id, patch) => updateMovement.mutateAsync({ id, patch })}
         onDelete={(id) => deleteMovement.mutateAsync(id)}
+        decimals={2}
       />
     </div>
   );

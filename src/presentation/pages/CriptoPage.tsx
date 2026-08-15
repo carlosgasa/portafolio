@@ -3,6 +3,8 @@ import { Bitcoin, Plus, Pencil, Tag, Wallet, PiggyBank, TrendingUp } from "lucid
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AmountInput } from "@/components/ui/amount-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,7 @@ import { useCryptoPortfolio } from "@/presentation/hooks/useCryptoPortfolio";
 import type { CryptoHolding } from "@/domain/entities/cripto";
 import type { CryptoHoldingWithValue } from "@/application/use-cases/cripto/getCryptoPortfolio";
 import { formatCurrency, formatPercent } from "@/shared/utils/format";
+import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { cn } from "@/lib/utils";
 
 export function CriptoPage() {
@@ -234,16 +237,18 @@ function HoldingForm({
   const [cantidad, setCantidad] = useState(String(initial?.cantidad ?? ""));
   const [costoTotal, setCostoTotal] = useState(String(initial?.costoTotal ?? ""));
   const [submitting, setSubmitting] = useState(false);
+  const costoTotalValue = evalAmountExpression(costoTotal);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (costoTotalValue === null) return;
     setSubmitting(true);
     try {
       await onSubmit({
         symbol: symbol.toUpperCase(),
         nombre,
         cantidad: Number(cantidad),
-        costoTotal: Number(costoTotal),
+        costoTotal: costoTotalValue,
       });
     } finally {
       setSubmitting(false);
@@ -277,18 +282,11 @@ function HoldingForm({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="h-costo">Costo total de compra (MXN)</Label>
-          <Input
-            id="h-costo"
-            type="number"
-            step="any"
-            required
-            value={costoTotal}
-            onChange={(e) => setCostoTotal(e.target.value)}
-          />
+          <AmountInput id="h-costo" required value={costoTotal} onChange={setCostoTotal} />
         </div>
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || costoTotalValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>
@@ -304,17 +302,20 @@ function PriceForm({
   onSubmit: (price: { symbol: string; precioUsd: number; precioMxn: number; fecha: string }) => Promise<void>;
 }) {
   const [precioMxn, setPrecioMxn] = useState("");
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const precioValue = evalAmountExpression(precioMxn);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (precioValue === null) return;
     setSubmitting(true);
     try {
       await onSubmit({
         symbol,
         precioUsd: 0,
-        precioMxn: Number(precioMxn),
-        fecha: new Date().toISOString().slice(0, 10),
+        precioMxn: precioValue,
+        fecha,
       });
     } finally {
       setSubmitting(false);
@@ -328,21 +329,17 @@ function PriceForm({
       </DialogHeader>
       <div className="flex flex-col gap-2">
         <Label htmlFor="cp-precio">Precio actual (MXN)</Label>
-        <Input
-          id="cp-precio"
-          type="number"
-          step="any"
-          required
-          autoFocus
-          value={precioMxn}
-          onChange={(e) => setPrecioMxn(e.target.value)}
-        />
+        <AmountInput id="cp-precio" required autoFocus value={precioMxn} onChange={setPrecioMxn} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="cp-fecha">Fecha</Label>
+        <DatePicker id="cp-fecha" value={fecha} onChange={setFecha} />
       </div>
       <p className="text-xs text-muted-foreground">
-        Se sobreescribe automaticamente cada dia si el simbolo tiene precio disponible.
+        Se sobreescribe automáticamente cada día si el símbolo tiene precio disponible.
       </p>
       <DialogFooter>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || precioValue === null}>
           {submitting ? "Guardando…" : "Guardar"}
         </Button>
       </DialogFooter>
