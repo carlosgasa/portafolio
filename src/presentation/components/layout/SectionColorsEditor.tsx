@@ -1,6 +1,6 @@
 import { Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { navItems } from "./nav-items";
 import { cn } from "@/lib/utils";
@@ -15,18 +15,24 @@ interface SectionColorsEditorProps {
  * no se guarda en Firestore). Clic de nuevo en el color activo lo quita.
  * Recibe el estado de useSectionColors por props para compartir la misma
  * instancia que pinta el menu (si cada uno llamara al hook por su cuenta,
- * el menu no se enteraria del cambio hasta recargar la pagina). */
+ * el menu no se enteraria del cambio hasta recargar la pagina).
+ * Usa Dialog en vez de Popover: en movil, un Popover reposicionado por
+ * colision (cerca del borde de un Sheet) es propenso a que el scroll
+ * tactil interno no funcione; un Dialog centrado con overflow-y-auto es el
+ * mismo patron que ya usan el resto de dialogos largos de la app. */
 export function SectionColorsEditor({ colors, setColor, clearColor }: SectionColorsEditorProps) {
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <Dialog>
+      <DialogTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Personalizar colores de secciones">
           <Palette className="size-4" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-80">
-        <p className="mb-1 text-sm font-medium text-foreground">Color por sección</p>
-        <ul className="flex max-h-[min(24rem,var(--radix-popover-content-available-height,24rem))] touch-pan-y flex-col divide-y divide-border/60 overflow-y-auto overscroll-contain">
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Color por sección</DialogTitle>
+        </DialogHeader>
+        <ul className="flex flex-col divide-y divide-border/60">
           {navItems.map((item) => {
             const current = colors[item.to];
             return (
@@ -54,7 +60,7 @@ export function SectionColorsEditor({ colors, setColor, clearColor }: SectionCol
             );
           })}
         </ul>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

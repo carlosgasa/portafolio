@@ -9,6 +9,7 @@ import { SectionColorsEditor } from "./SectionColorsEditor";
 import { ThemeToggle } from "@/presentation/components/ThemeToggle";
 import { BackupDialog } from "@/presentation/components/BackupDialog";
 import { BrandMark } from "@/presentation/components/BrandMark";
+import { ZoomControl } from "@/presentation/components/ZoomControl";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useAutoWeeklySnapshot } from "@/presentation/hooks/useAutoWeeklySnapshot";
 import { useSectionColors } from "@/presentation/hooks/useSectionColors";
@@ -145,9 +146,10 @@ function UserFooter({
   clearColor: (sectionTo: string) => void;
 }) {
   return (
-    <div className="mt-4 flex items-center justify-between gap-1 border-t border-border pt-4">
+    <div className="mt-4 flex flex-col gap-1.5 border-t border-border pt-4">
       <span className="truncate text-xs text-muted-foreground">{userLabel}</span>
-      <div className="flex shrink-0 items-center">
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+        <ZoomControl />
         <SectionColorsEditor colors={colors} setColor={setColor} clearColor={clearColor} />
         <BackupDialog />
         <ThemeToggle />
