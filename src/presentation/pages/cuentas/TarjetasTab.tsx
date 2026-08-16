@@ -1,4 +1,14 @@
 import { useMemo, useState, type FormEvent } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Plus, Pencil, Check, X, CreditCard as CardIcon, CalendarClock, Share2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +35,7 @@ import { StatCard } from "@/presentation/components/StatCard";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { SnapshotHistory } from "@/presentation/components/SnapshotHistory";
 import { Money } from "@/presentation/components/Money";
+import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 import type { useCuentas } from "@/presentation/hooks/useCuentas";
 import type { CardWithPayments } from "@/application/use-cases/cuentas/getCuentasOverview";
 import type { CardPayment, CreditCard, CuentasSnapshot } from "@/domain/entities/cuentas";
@@ -352,6 +363,7 @@ const VISIBLE_STEP = 3;
 
 function UpcomingPayments({ cards }: { cards: CardWithPayments[] }) {
   const [visibleCount, setVisibleCount] = useState(VISIBLE_STEP);
+  const { isHidden } = useHiddenBalances();
 
   const { overdueTotal, months } = useMemo(() => {
     const todayKey = new Date().toISOString().slice(0, 7);
@@ -376,6 +388,11 @@ function UpcomingPayments({ cards }: { cards: CardWithPayments[] }) {
   const visibleMonths = months.slice(0, visibleCount);
   const hasMore = months.length > visibleCount;
 
+  const chartData = [
+    ...(overdueTotal > 0 ? [{ key: "atrasado", label: "Atrasado", monto: overdueTotal }] : []),
+    ...months.map(([key, monto]) => ({ key, label: formatMonthLabel(key), monto })),
+  ];
+
   return (
     <Card className="border-border/60 bg-card/60">
       <CardHeader>
@@ -384,7 +401,58 @@ function UpcomingPayments({ cards }: { cards: CardWithPayments[] }) {
           Próximos pagos
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-0 p-0">
+      <CardContent className="flex flex-col gap-4 px-0 pb-0">
+        {chartData.length >= 2 && (
+          <div className="px-4">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={chartData} margin={{ left: 8, right: 8 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="label"
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={56}
+                  tickFormatter={(v: number) =>
+                    isHidden
+                      ? "•••"
+                      : new Intl.NumberFormat("es-MX", {
+                          notation: "compact",
+                          compactDisplay: "short",
+                        }).format(v)
+                  }
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "var(--foreground)" }}
+                  formatter={(value) => [
+                    isHidden ? "••••••" : formatCurrency(Number(value)),
+                    "Monto",
+                  ]}
+                  cursor={{ fill: "var(--muted)", opacity: 0.3 }}
+                />
+                <Bar dataKey="monto" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                  {chartData.map((d) => (
+                    <Cell key={d.key} fill={d.key === "atrasado" ? "var(--negative)" : "var(--chart-1)"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
         <ul className="flex flex-col divide-y divide-border/60">
           {overdueTotal > 0 && (
             <li className="flex items-center justify-between px-4 py-2.5 text-sm">
