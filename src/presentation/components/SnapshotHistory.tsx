@@ -1,4 +1,13 @@
 import { useState } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { History, Camera, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +50,9 @@ export function SnapshotHistory({
   const { isHidden } = useHiddenBalances();
 
   const own = snapshots.filter((s) => s.tipo === tipo).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const chartData = [...own]
+    .reverse()
+    .map((s) => ({ fecha: s.fecha, label: formatShortDate(s.fecha), total: s.total }));
 
   async function handleTake() {
     setTaking(true);
@@ -81,6 +93,68 @@ export function SnapshotHistory({
             ? "Guardando…"
             : `Tomar snapshot de hoy (${isHidden ? "••••••" : formatCurrency(currentTotal)})`}
         </Button>
+
+        {chartData.length >= 2 && (
+          <div className="rounded-lg border border-border/60 bg-card/40 p-2">
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={chartData} margin={{ left: 8, right: 8 }}>
+                <defs>
+                  <linearGradient id="gradSnapshotHistory" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="label"
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  minTickGap={24}
+                />
+                <YAxis
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={56}
+                  tickFormatter={(v: number) =>
+                    isHidden
+                      ? "•••"
+                      : new Intl.NumberFormat("es-MX", {
+                          notation: "compact",
+                          compactDisplay: "short",
+                        }).format(v)
+                  }
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "var(--foreground)" }}
+                  formatter={(value) => [
+                    isHidden ? "••••••" : formatCurrency(Number(value)),
+                    "Total",
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  stroke="var(--chart-1)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  fill="url(#gradSnapshotHistory)"
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {own.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">

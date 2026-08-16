@@ -85,37 +85,7 @@ function formatWeekRange(start: string, end: string): string {
   return `${weekDayFormatter.format(s)}–${weekDayFormatter.format(e)} ${weekMonthFormatter.format(e)}`;
 }
 
-/** Texto para compartir: pagos pendientes de una tarjeta en el mes objetivo
- * (este o el siguiente), listo para WhatsApp/copiar. */
-function buildCardStatementText(card: CardWithPayments, monthOffset: number): string {
-  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
-  const lines: string[] = [
-    `Pagos de ${card.nombre} - ${formatMonthLabel(targetMonthKey)}`,
-    `Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`,
-    "",
-  ];
-
-  const pagosDelMes = cardPagosDelMes(card, targetMonthKey);
-
-  if (pagosDelMes.length === 0) {
-    lines.push(`Sin pagos pendientes ${monthOffset === 0 ? "este mes" : "ese mes"}.`);
-  } else {
-    let total = 0;
-    for (const p of pagosDelMes) {
-      total += p.monto;
-      lines.push(`${formatShortDate(p.fecha)}: ${formatCurrency(p.monto, 2)}`);
-    }
-    lines.push("");
-    lines.push(`Total del mes: ${formatCurrency(total, 2)}`);
-  }
-
-  lines.push("");
-  lines.push(`Pendiente total de la tarjeta: ${formatCurrency(card.pendiente, 2)}`);
-
-  return lines.join("\n");
-}
-
-/** Igual que buildCardStatementText pero juntando todas las tarjetas en un
+/** Igual a lo que armaba el estado de cuenta por tarjeta, pero juntando todas las tarjetas en un
  * solo texto, con subtotal por tarjeta y total general. */
 function buildAllCardsStatementText(cards: CardWithPayments[], monthOffset: number): string {
   const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
@@ -169,10 +139,6 @@ async function shareText(title: string, text: string) {
   } catch {
     toast.error("No se pudo copiar");
   }
-}
-
-function shareCardStatement(card: CardWithPayments, monthOffset: number) {
-  return shareText(`Pagos de ${card.nombre}`, buildCardStatementText(card, monthOffset));
 }
 
 function shareAllCardsStatement(cards: CardWithPayments[], monthOffset: number) {
@@ -328,26 +294,6 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
                   {c.nombre}
                 </CardTitle>
                 <div className="flex gap-1">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        aria-label="Compartir"
-                      >
-                        <Share2 className="size-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => shareCardStatement(c, 0)}>
-                        Pagos de este mes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => shareCardStatement(c, 1)}>
-                        Pagos del próximo mes
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                   <Button
                     variant="ghost"
                     size="icon"
