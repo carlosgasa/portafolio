@@ -25,6 +25,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +42,7 @@ import type { CuentasSnapshot, DebtType } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { addMonths, formatMonthLabel } from "@/shared/utils/dates";
+import { exportStatementImage, exportStatementPdf } from "@/shared/utils/statementExport";
 import { cn } from "@/lib/utils";
 
 type CuentasApi = ReturnType<typeof useCuentas>;
@@ -210,13 +214,12 @@ export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
   );
 }
 
-/** Texto plano con el detalle completo de las deudas de una persona, listo
- * para compartir (WhatsApp, SMS, etc.) o copiar. Siempre muestra montos
- * reales sin importar el "ocultar saldos": compartir es una accion explicita
- * de mostrarle esto a alguien mas. */
-function buildStatementText(person: PersonWithDebts): string {
+/** Lineas del detalle completo de las deudas de una persona, listas para
+ * compartir como texto, PDF o imagen. Siempre muestra montos reales sin
+ * importar el "ocultar saldos": compartir es una accion explicita de
+ * mostrarle esto a alguien mas. */
+function buildStatementLines(person: PersonWithDebts): string[] {
   const lines: string[] = [];
-  lines.push(`Estado de cuenta - ${person.nombre}`);
   lines.push(`Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`);
   lines.push("");
   lines.push(`Total pendiente: ${formatCurrency(person.totalMeDebe)}`);
@@ -224,7 +227,7 @@ function buildStatementText(person: PersonWithDebts): string {
   if (person.deudas.length === 0) {
     lines.push("");
     lines.push("Sin deudas registradas.");
-    return lines.join("\n");
+    return lines;
   }
 
   for (const [i, d] of person.deudas.entries()) {
@@ -246,17 +249,20 @@ function buildStatementText(person: PersonWithDebts): string {
     lines.push(`   Saldo pendiente: ${formatCurrency(d.saldoPendiente)}`);
   }
 
-  return lines.join("\n");
+  return lines;
+}
+
+function buildStatementText(person: PersonWithDebts): string {
+  return [`Estado de cuenta - ${person.nombre}`, ...buildStatementLines(person)].join("\n");
 }
 
 /** Version corta: solo la cuota que le toca en el mes objetivo (este mes o
  * el siguiente) por cada prestamo a plazos, mas las deudas de monto simple
  * que sigan pendientes (esas no tienen mes, siempre aparecen). Pensado para
  * mandarlo directo por WhatsApp sin el detalle completo. */
-function buildSimpleStatementText(person: PersonWithDebts, monthOffset: number): string {
+function buildSimpleStatementLines(person: PersonWithDebts, monthOffset: number): string[] {
   const lines: string[] = [];
   const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
-  lines.push(`Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`);
   lines.push(`Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`);
   lines.push("");
 
@@ -287,7 +293,15 @@ function buildSimpleStatementText(person: PersonWithDebts, monthOffset: number):
     lines.push(`Total: ${formatCurrency(total)}`);
   }
 
-  return lines.join("\n");
+  return lines;
+}
+
+function buildSimpleStatementText(person: PersonWithDebts, monthOffset: number): string {
+  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  return [
+    `Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`,
+    ...buildSimpleStatementLines(person, monthOffset),
+  ].join("\n");
 }
 
 async function shareText(title: string, text: string) {
@@ -315,6 +329,49 @@ function shareStatement(person: PersonWithDebts) {
 
 function shareSimpleStatement(person: PersonWithDebts, monthOffset: number) {
   return shareText(`Pagos de ${person.nombre}`, buildSimpleStatementText(person, monthOffset));
+}
+
+function slug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function exportStatementAsPdf(person: PersonWithDebts) {
+  return exportStatementPdf(
+    `Estado de cuenta - ${person.nombre}`,
+    buildStatementLines(person),
+    `estado-de-cuenta-${slug(person.nombre)}.pdf`,
+  );
+}
+
+function exportStatementAsImage(person: PersonWithDebts) {
+  return exportStatementImage(
+    `Estado de cuenta - ${person.nombre}`,
+    buildStatementLines(person),
+    `estado-de-cuenta-${slug(person.nombre)}.png`,
+  );
+}
+
+function exportSimpleStatementAsPdf(person: PersonWithDebts, monthOffset: number) {
+  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  return exportStatementPdf(
+    `Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`,
+    buildSimpleStatementLines(person, monthOffset),
+    `pagos-${slug(person.nombre)}-${targetMonthKey}.pdf`,
+  );
+}
+
+function exportSimpleStatementAsImage(person: PersonWithDebts, monthOffset: number) {
+  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  return exportStatementImage(
+    `Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`,
+    buildSimpleStatementLines(person, monthOffset),
+    `pagos-${slug(person.nombre)}-${targetMonthKey}.png`,
+  );
 }
 
 function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi }) {
@@ -380,10 +437,19 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
           />
         </DialogContent>
         </Dialog>
-        <Button size="sm" variant="outline" onClick={() => shareStatement(person)}>
-          <Share2 className="size-4" />
-          Compartir estado de cuenta
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline">
+              <Share2 className="size-4" />
+              Compartir estado de cuenta
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => shareStatement(person)}>Texto (WhatsApp)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportStatementAsPdf(person)}>PDF</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportStatementAsImage(person)}>Imagen</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="outline">
@@ -392,12 +458,34 @@ function PersonDebts({ person, api }: { person: PersonWithDebts; api: CuentasApi
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => shareSimpleStatement(person, 0)}>
-              Este mes
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => shareSimpleStatement(person, 1)}>
-              Próximo mes
-            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Este mes</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => shareSimpleStatement(person, 0)}>
+                  Texto (WhatsApp)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportSimpleStatementAsPdf(person, 0)}>
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportSimpleStatementAsImage(person, 0)}>
+                  Imagen
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Próximo mes</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => shareSimpleStatement(person, 1)}>
+                  Texto (WhatsApp)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportSimpleStatementAsPdf(person, 1)}>
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportSimpleStatementAsImage(person, 1)}>
+                  Imagen
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
