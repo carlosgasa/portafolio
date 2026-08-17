@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Home, Plus, Pencil, Wallet } from "lucide-react";
+import { Home, Plus, Pencil, Wallet, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,12 +51,21 @@ export function CasaPage() {
   const [dialogItem, setDialogItem] = useState<ExpenseItem | "new" | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("fecha");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [search, setSearch] = useState("");
 
   const items = query.data ?? [];
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (e) => e.concepto.toLowerCase().includes(q) || (e.categoria ?? "").toLowerCase().includes(q),
+    );
+  }, [items, search]);
+
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
-    return [...items].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       switch (sortKey) {
         case "cantidad":
           return (a.cantidad - b.cantidad) * dir;
@@ -73,7 +82,7 @@ export function CasaPage() {
           return (a.fecha ?? "").localeCompare(b.fecha ?? "") * dir;
       }
     });
-  }, [items, sortKey, sortDir]);
+  }, [filtered, sortKey, sortDir]);
 
   const byCategory = useMemo(() => {
     const totals = new Map<string, number>();
@@ -184,6 +193,16 @@ export function CasaPage() {
         )}
       </div>
 
+      <div className="relative sm:max-w-xs">
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por concepto o categoría…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-border/60 bg-card/60">
         <Table>
           <TableHeader>
@@ -207,7 +226,7 @@ export function CasaPage() {
             ) : sorted.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  Sin gastos todavía.
+                  {search ? "Sin resultados para tu búsqueda." : "Sin gastos todavía."}
                 </TableCell>
               </TableRow>
             ) : (

@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/presentation/components/layout/AppLayout";
 import { ProtectedRoute } from "@/presentation/components/ProtectedRoute";
+import { useStartPage } from "@/presentation/hooks/useStartPage";
 
 const DashboardPage = lazy(() =>
   import("@/presentation/pages/DashboardPage").then((m) => ({
@@ -52,6 +53,14 @@ function PageFallback() {
   );
 }
 
+/** "/" abre el Dashboard por default, o la pantalla que se haya elegido en
+ * Configuracion. */
+function IndexRoute() {
+  const { page } = useStartPage();
+  if (page !== "/") return <Navigate to={page} replace />;
+  return <DashboardPage />;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -59,7 +68,7 @@ function App() {
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route element={<AppLayout />}>
-              <Route index element={<DashboardPage />} />
+              <Route index element={<IndexRoute />} />
               <Route path="cripto" element={<CriptoPage />} />
               <Route path="bolsa" element={<BolsaPage />} />
               <Route path="finsus" element={<FinsusPage />} />

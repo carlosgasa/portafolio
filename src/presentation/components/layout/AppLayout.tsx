@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/presentation/components/ThemeToggle";
 import { BackupDialog } from "@/presentation/components/BackupDialog";
 import { BrandMark } from "@/presentation/components/BrandMark";
 import { ZoomControl } from "@/presentation/components/ZoomControl";
+import { SettingsDialog } from "@/presentation/components/SettingsDialog";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useAutoWeeklySnapshot } from "@/presentation/hooks/useAutoWeeklySnapshot";
 import { useSectionColors } from "@/presentation/hooks/useSectionColors";
@@ -152,6 +153,7 @@ function UserFooter({
         <ZoomControl />
         <SectionColorsEditor colors={colors} setColor={setColor} clearColor={clearColor} />
         <BackupDialog />
+        <SettingsDialog />
         <ThemeToggle />
         <Button variant="ghost" size="icon" aria-label="Cerrar sesión" onClick={onSignOut}>
           <LogOut className="size-4" />

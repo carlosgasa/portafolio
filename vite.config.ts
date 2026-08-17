@@ -44,4 +44,20 @@ export default defineConfig({
   server: {
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // El SDK de Firebase es pesado (~700kB) y lo usan tanto modulos
+        // eager (AppLayout/BackupDialog) como casi todas las paginas
+        // lazy-loaded; sin esto, el chunking automatico a veces decide
+        // fusionarlo al bundle principal (que carga incluso antes del
+        // login), en vez de dejarlo separado.
+        manualChunks(id) {
+          if (id.includes("node_modules/firebase") || id.includes("node_modules/@firebase")) {
+            return "firebase";
+          }
+        },
+      },
+    },
+  },
 });
