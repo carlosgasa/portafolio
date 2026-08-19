@@ -58,6 +58,7 @@ export function CuentasPage() {
               balances={data.liquidBalances}
               total={data.totalLiquidez}
               snapshots={data.snapshots}
+              history={data.liquidBalanceHistory}
             />
           </TabsContent>
         </Tabs>

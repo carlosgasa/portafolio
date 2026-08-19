@@ -24,6 +24,7 @@ import { HideBalancesButton } from "@/presentation/components/HideBalancesButton
 import { Money } from "@/presentation/components/Money";
 import { usePortfolioHistory } from "@/presentation/hooks/usePortfolioHistory";
 import { useAforePortfolio } from "@/presentation/hooks/useAforePortfolio";
+import { useInfonavitPortfolio } from "@/presentation/hooks/useInfonavitPortfolio";
 import { useBolsaPortfolio } from "@/presentation/hooks/useBolsaPortfolio";
 import { useCryptoPortfolio } from "@/presentation/hooks/useCryptoPortfolio";
 import { useFinsusPortfolio } from "@/presentation/hooks/useFinsusPortfolio";
@@ -65,6 +66,7 @@ const BALANCE_INSTRUMENTS = [
 export function DashboardPage() {
   const { data, isLoading } = usePortfolioHistory();
   const afore = useAforePortfolio();
+  const infonavit = useInfonavitPortfolio();
   const bolsa = useBolsaPortfolio();
   const cripto = useCryptoPortfolio();
   const finsus = useFinsusPortfolio();
@@ -117,11 +119,13 @@ export function DashboardPage() {
     aporteTotalLive !== 0 ? (valorTotalLive - aporteTotalLive) / Math.abs(aporteTotalLive) : 0;
 
   const cuentasData = cuentas.query.data;
+  const infonavitAdeudo = infonavit.latest?.saldo ?? 0;
   const patrimonioNeto =
     valorTotalLive +
     (cuentasData?.totalLiquidez ?? 0) +
     (cuentasData?.totalMeDeben ?? 0) -
-    (cuentasData?.totalTarjetasPendiente ?? 0);
+    (cuentasData?.totalTarjetasPendiente ?? 0) -
+    infonavitAdeudo;
 
   const { start: weekStart, end: weekEnd } = currentWeekRange();
   const pagosSemana = (cuentasData?.cards ?? [])
@@ -163,6 +167,7 @@ export function DashboardPage() {
       aporteTotal: aporteTotalLive,
       rendimiento: rendimientoLive,
       patrimonioNeto,
+      infonavitAdeudo,
       breakdown: breakdownData,
       history: chartData,
     });
@@ -721,6 +726,7 @@ function buildDashboardReportCsv(params: {
   aporteTotal: number;
   rendimiento: number;
   patrimonioNeto: number;
+  infonavitAdeudo: number;
   breakdown: { instrumento: string; valor: number; aporte: number }[];
   history: { fecha: string; valor: number; aporte: number }[];
 }): string {
@@ -733,6 +739,7 @@ function buildDashboardReportCsv(params: {
   lines.push(`Valor total,${params.valorTotal.toFixed(2)}`);
   lines.push(`Aporte total,${params.aporteTotal.toFixed(2)}`);
   lines.push(`Rendimiento,${(params.rendimiento * 100).toFixed(2)}%`);
+  lines.push(`Adeudo Infonavit,${params.infonavitAdeudo.toFixed(2)}`);
   lines.push(`Patrimonio neto,${params.patrimonioNeto.toFixed(2)}`);
   lines.push("");
   lines.push("Por instrumento");

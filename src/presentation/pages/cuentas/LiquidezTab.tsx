@@ -1,5 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Pencil, Banknote } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Plus, Pencil, Banknote, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,9 +32,15 @@ import { StatCard } from "@/presentation/components/StatCard";
 import { DeleteButton } from "@/presentation/components/DeleteButton";
 import { SnapshotHistory } from "@/presentation/components/SnapshotHistory";
 import { Money } from "@/presentation/components/Money";
+import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 import type { useCuentas } from "@/presentation/hooks/useCuentas";
-import type { CuentasSnapshot, LiquidBalance, LiquidBalanceType } from "@/domain/entities/cuentas";
-import { formatCurrency } from "@/shared/utils/format";
+import type {
+  CuentasSnapshot,
+  LiquidBalance,
+  LiquidBalanceHistoryEntry,
+  LiquidBalanceType,
+} from "@/domain/entities/cuentas";
+import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { cn } from "@/lib/utils";
@@ -37,13 +52,15 @@ const TIPO_LABEL: Record<LiquidBalanceType, string> = {
   ingreso_esperado: "Ingreso esperado",
 };
 
-export function LiquidezTab({ api, balances, total, snapshots }: {
+export function LiquidezTab({ api, balances, total, snapshots, history }: {
   api: CuentasApi;
   balances: LiquidBalance[];
   total: number;
   snapshots: CuentasSnapshot[];
+  history: LiquidBalanceHistoryEntry[];
 }) {
   const [dialogItem, setDialogItem] = useState<LiquidBalance | "new" | null>(null);
+  const [historyItem, setHistoryItem] = useState<LiquidBalance | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -129,6 +146,15 @@ export function LiquidezTab({ api, balances, total, snapshots }: {
                   variant="ghost"
                   size="icon"
                   className="size-7"
+                  aria-label="Historial"
+                  onClick={() => setHistoryItem(b)}
+                >
+                  <History className="size-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
                   aria-label="Editar"
                   onClick={() => setDialogItem(b)}
                 >
@@ -139,6 +165,111 @@ export function LiquidezTab({ api, balances, total, snapshots }: {
             </li>
             );
           })}
+        </ul>
+      )}
+
+      <Dialog open={historyItem !== null} onOpenChange={(o) => !o && setHistoryItem(null)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          {historyItem && (
+            <LiquidBalanceHistoryContent
+              item={historyItem}
+              entries={history.filter((h) => h.balanceId === historyItem.id)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function LiquidBalanceHistoryContent({
+  item,
+  entries,
+}: {
+  item: LiquidBalance;
+  entries: LiquidBalanceHistoryEntry[];
+}) {
+  const { isHidden } = useHiddenBalances();
+  const sorted = [...entries].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const chartData = sorted.map((e) => ({ fecha: e.fecha, label: formatShortDate(e.fecha), monto: e.monto }));
+
+  return (
+    <div className="flex flex-col gap-4">
+      <DialogHeader>
+        <DialogTitle>Historial de {item.nombre}</DialogTitle>
+      </DialogHeader>
+
+      {chartData.length >= 2 && (
+        <div className="rounded-lg border border-border/60 bg-card/40 p-2">
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={chartData} margin={{ left: 8, right: 8 }}>
+              <defs>
+                <linearGradient id="gradLiquidHistory" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+              <XAxis
+                dataKey="label"
+                stroke="var(--muted-foreground)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                minTickGap={24}
+              />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                width={56}
+                tickFormatter={(v: number) =>
+                  isHidden
+                    ? "•••"
+                    : new Intl.NumberFormat("es-MX", {
+                        notation: "compact",
+                        compactDisplay: "short",
+                      }).format(v)
+                }
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  fontSize: 12,
+                }}
+                labelStyle={{ color: "var(--foreground)" }}
+                formatter={(value) => [isHidden ? "••••••" : formatCurrency(Number(value)), "Monto"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="monto"
+                stroke="var(--chart-1)"
+                strokeWidth={2}
+                strokeLinecap="round"
+                fill="url(#gradLiquidHistory)"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {sorted.length === 0 ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">Sin historial todavía.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/60">
+          {[...sorted].reverse().map((e) => (
+            <li key={e.id} className="flex items-center justify-between px-3 py-2 text-sm">
+              <span className="text-foreground">{formatShortDate(e.fecha)}</span>
+              <span className="font-mono tabular-nums text-foreground">
+                <Money value={e.monto} />
+              </span>
+            </li>
+          ))}
         </ul>
       )}
     </div>

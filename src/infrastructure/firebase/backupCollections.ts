@@ -9,6 +9,7 @@ export interface BackupCollectionMeta {
  * documentos genericos. */
 export const BACKUP_COLLECTIONS: BackupCollectionMeta[] = [
   { name: "aforeValores", label: "AFORE — saldos" },
+  { name: "infonavitSaldos", label: "Infonavit — saldos" },
   { name: "bolsaHoldings", label: "Bolsa — holdings" },
   { name: "bolsaMovimientos", label: "Bolsa — movimientos" },
   { name: "bolsaPrecios", label: "Bolsa — precios" },
@@ -22,6 +23,7 @@ export const BACKUP_COLLECTIONS: BackupCollectionMeta[] = [
   { name: "deudas", label: "Cuentas — deudas" },
   { name: "cuotas", label: "Cuentas — cuotas" },
   { name: "liquidez", label: "Cuentas — liquidez" },
+  { name: "liquidezHistorial", label: "Cuentas — historial de liquidez" },
   { name: "cuentasSnapshots", label: "Cuentas — snapshots" },
   { name: "finsusCuentas", label: "Finsus — inversiones" },
   { name: "finsusMovimientos", label: "Finsus — movimientos" },

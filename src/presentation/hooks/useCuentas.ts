@@ -131,12 +131,27 @@ export function useCuentas() {
   });
 
   const addLiquidBalance = useMutation({
-    mutationFn: (b: Omit<LiquidBalance, "id">) => repo.addLiquidBalance(uid, b),
+    mutationFn: async (b: Omit<LiquidBalance, "id">) => {
+      const id = await repo.addLiquidBalance(uid, b);
+      await repo.addLiquidBalanceHistoryEntry(uid, {
+        balanceId: id,
+        fecha: new Date().toISOString().slice(0, 10),
+        monto: b.monto,
+      });
+    },
     onSuccess: invalidate,
   });
   const updateLiquidBalance = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<Omit<LiquidBalance, "id">> }) =>
-      repo.updateLiquidBalance(uid, id, patch),
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Omit<LiquidBalance, "id">> }) => {
+      await repo.updateLiquidBalance(uid, id, patch);
+      if (patch.monto !== undefined) {
+        await repo.addLiquidBalanceHistoryEntry(uid, {
+          balanceId: id,
+          fecha: new Date().toISOString().slice(0, 10),
+          monto: patch.monto,
+        });
+      }
+    },
     onSuccess: invalidate,
   });
   const deleteLiquidBalance = useMutation({

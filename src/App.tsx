@@ -34,6 +34,11 @@ const AforePage = lazy(() =>
     default: m.AforePage,
   })),
 );
+const InfonavitPage = lazy(() =>
+  import("@/presentation/pages/InfonavitPage").then((m) => ({
+    default: m.InfonavitPage,
+  })),
+);
 const CasaPage = lazy(() =>
   import("@/presentation/pages/CasaPage").then((m) => ({
     default: m.CasaPage,
@@ -74,6 +79,7 @@ function App() {
               <Route path="finsus" element={<FinsusPage />} />
               <Route path="yotepresto" element={<YoTePrestoPage />} />
               <Route path="afore" element={<AforePage />} />
+              <Route path="infonavit" element={<InfonavitPage />} />
               <Route path="casa" element={<CasaPage />} />
               <Route path="cuentas" element={<CuentasPage />} />
             </Route>

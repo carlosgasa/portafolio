@@ -5,6 +5,7 @@ import type {
   Debt,
   Installment,
   LiquidBalance,
+  LiquidBalanceHistoryEntry,
   Person,
 } from "@/domain/entities/cuentas";
 
@@ -42,13 +43,19 @@ export interface ICuentasRepository {
   ): Promise<void>;
 
   listLiquidBalances(uid: string): Promise<LiquidBalance[]>;
-  addLiquidBalance(uid: string, balance: Omit<LiquidBalance, "id">): Promise<void>;
+  addLiquidBalance(uid: string, balance: Omit<LiquidBalance, "id">): Promise<string>;
   updateLiquidBalance(
     uid: string,
     id: string,
     patch: Partial<Omit<LiquidBalance, "id">>,
   ): Promise<void>;
   deleteLiquidBalance(uid: string, id: string): Promise<void>;
+
+  listLiquidBalanceHistory(uid: string): Promise<LiquidBalanceHistoryEntry[]>;
+  addLiquidBalanceHistoryEntry(
+    uid: string,
+    entry: Omit<LiquidBalanceHistoryEntry, "id">,
+  ): Promise<void>;
 
   listSnapshots(uid: string): Promise<CuentasSnapshot[]>;
   addSnapshot(uid: string, snapshot: Omit<CuentasSnapshot, "id">): Promise<void>;

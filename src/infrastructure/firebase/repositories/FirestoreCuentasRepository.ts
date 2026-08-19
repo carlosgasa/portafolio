@@ -6,6 +6,7 @@ import type {
   Debt,
   Installment,
   LiquidBalance,
+  LiquidBalanceHistoryEntry,
   Person,
 } from "@/domain/entities/cuentas";
 import { addItem, deleteItem, listAll, updateItem } from "@/infrastructure/firebase/crud";
@@ -16,6 +17,7 @@ const PERSONS = "personas";
 const DEBTS = "deudas";
 const INSTALLMENTS = "cuotas";
 const LIQUID = "liquidez";
+const LIQUID_HISTORY = "liquidezHistorial";
 const SNAPSHOTS = "cuentasSnapshots";
 
 export class FirestoreCuentasRepository implements ICuentasRepository {
@@ -85,13 +87,20 @@ export class FirestoreCuentasRepository implements ICuentasRepository {
     return listAll<Omit<LiquidBalance, "id">>(uid, LIQUID);
   }
   addLiquidBalance(uid: string, balance: Omit<LiquidBalance, "id">) {
-    return addItem(uid, LIQUID, balance).then(() => undefined);
+    return addItem(uid, LIQUID, balance);
   }
   updateLiquidBalance(uid: string, id: string, patch: Partial<Omit<LiquidBalance, "id">>) {
     return updateItem(uid, LIQUID, id, patch);
   }
   deleteLiquidBalance(uid: string, id: string) {
     return deleteItem(uid, LIQUID, id);
+  }
+
+  listLiquidBalanceHistory(uid: string) {
+    return listAll<Omit<LiquidBalanceHistoryEntry, "id">>(uid, LIQUID_HISTORY);
+  }
+  addLiquidBalanceHistoryEntry(uid: string, entry: Omit<LiquidBalanceHistoryEntry, "id">) {
+    return addItem(uid, LIQUID_HISTORY, entry).then(() => undefined);
   }
 
   listSnapshots(uid: string) {

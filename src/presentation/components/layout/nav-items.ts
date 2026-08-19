@@ -5,6 +5,7 @@ import {
   Landmark,
   HandCoins,
   PiggyBank,
+  Building2,
   Home,
   Wallet,
   type LucideIcon,
@@ -23,6 +24,7 @@ export const navItems: NavItem[] = [
   { to: "/finsus", label: "Finsus", icon: Landmark },
   { to: "/yotepresto", label: "YoTePresto", icon: HandCoins },
   { to: "/afore", label: "AFORE", icon: PiggyBank },
+  { to: "/infonavit", label: "Infonavit", icon: Building2 },
   { to: "/casa", label: "Casa", icon: Home },
   { to: "/cuentas", label: "Cuentas", icon: Wallet },
 ];

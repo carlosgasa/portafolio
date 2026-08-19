@@ -58,6 +58,15 @@ export interface LiquidBalance {
   color?: string;
 }
 
+/** Se guarda automaticamente cada vez que se crea un LiquidBalance o se le
+ * edita el monto, para poder ver como cambio ese registro en el tiempo. */
+export interface LiquidBalanceHistoryEntry {
+  id: string;
+  balanceId: string;
+  fecha: DateOnly;
+  monto: number;
+}
+
 export type SnapshotTipo = "tarjetas" | "personas" | "liquidez";
 
 export interface SnapshotDetalleItem {

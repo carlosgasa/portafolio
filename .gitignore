@@ -21,6 +21,10 @@ dist-ssr
 __pycache__/
 *.pyc
 
+# App Android nativa: vive en este repo pero es un proyecto aparte que se
+# maneja desde Android Studio, no desde aqui.
+/android/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
