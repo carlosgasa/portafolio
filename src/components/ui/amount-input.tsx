@@ -32,7 +32,7 @@ function AmountInput({
       <Input
         id={id}
         type="text"
-        inputMode="text"
+        inputMode={isFormula ? "text" : "decimal"}
         autoComplete="off"
         required={required}
         autoFocus={autoFocus}

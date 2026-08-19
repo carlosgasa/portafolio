@@ -342,6 +342,7 @@ function ExpenseForm({
           <Input
             id="c-cantidad"
             type="number"
+            inputMode="decimal"
             step="any"
             required
             value={cantidad}

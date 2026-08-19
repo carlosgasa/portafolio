@@ -272,6 +272,7 @@ function HoldingForm({
           <Input
             id="s-cantidad"
             type="number"
+            inputMode="decimal"
             step="any"
             required
             value={cantidad}

@@ -714,6 +714,7 @@ function DebtForm({
             <Input
               id="d-numcuotas"
               type="number"
+              inputMode="numeric"
               min="1"
               required
               value={numCuotas}

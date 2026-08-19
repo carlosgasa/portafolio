@@ -352,6 +352,7 @@ function AccountForm({
           <Input
             id="f-tasa"
             type="number"
+            inputMode="decimal"
             step="any"
             required
             value={tasa}
