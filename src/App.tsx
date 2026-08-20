@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/presentation/components/layout/AppLayout";
 import { ProtectedRoute } from "@/presentation/components/ProtectedRoute";
@@ -58,11 +58,23 @@ function PageFallback() {
   );
 }
 
+const START_PAGE_REDIRECT_FLAG = "portafolio:start-page-redirected";
+
 /** "/" abre el Dashboard por default, o la pantalla que se haya elegido en
- * Configuracion. */
+ * Configuracion — pero solo la primera vez que se entra en esta sesion. Si
+ * redirigiera SIEMPRE que se visita "/", el propio link de "Dashboard" del
+ * menu (que apunta a "/") quedaria inalcanzable en cuanto se elige otra
+ * pantalla de inicio: cada clic ahi rebotaria de vuelta a esa pantalla. */
 function IndexRoute() {
   const { page } = useStartPage();
-  if (page !== "/") return <Navigate to={page} replace />;
+  const [alreadyRedirected] = useState(() => {
+    if (page === "/") return true;
+    if (sessionStorage.getItem(START_PAGE_REDIRECT_FLAG)) return true;
+    sessionStorage.setItem(START_PAGE_REDIRECT_FLAG, "1");
+    return false;
+  });
+
+  if (!alreadyRedirected && page !== "/") return <Navigate to={page} replace />;
   return <DashboardPage />;
 }
 

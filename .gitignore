@@ -12,11 +12,17 @@ dist
 dist-ssr
 *.local
 .env
+.env.local
+.env.*.local
 .firebase/
 
 # Datos personales / credenciales - nunca al repo
 /scripts/import-data/
 /service-account*.json
+*firebase-adminsdk*.json
+*.pem
+*.p12
+*.key
 /functions/lib/
 __pycache__/
 *.pyc
