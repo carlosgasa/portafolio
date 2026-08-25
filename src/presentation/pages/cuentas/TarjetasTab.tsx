@@ -173,11 +173,6 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
     .reduce((s, p) => s + p.monto, 0);
 
   const currentMonthKey = new Date().toISOString().slice(0, 7);
-  const cardsMonthDetalle = cards.map((c) => ({
-    nombre: c.nombre,
-    monto: cardPagosDelMes(c, currentMonthKey).reduce((s, p) => s + p.monto, 0),
-  }));
-  const totalMesActual = cardsMonthDetalle.reduce((s, c) => s + c.monto, 0);
 
   const nextMonthKey = addMonths(new Date().toISOString().slice(0, 10), 1).slice(0, 7);
   const nextMonthTotal = allPending
@@ -217,8 +212,8 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
             tipo="tarjetas"
             label="tarjetas"
             snapshots={snapshots}
-            currentTotal={totalMesActual}
-            currentDetalle={cardsMonthDetalle}
+            currentTotal={totalPendiente}
+            currentDetalle={cards.map((c) => ({ nombre: c.nombre, monto: c.pendiente }))}
             onTake={(s) => api.addSnapshot.mutateAsync(s)}
             onDelete={(id) => api.deleteSnapshot.mutateAsync(id)}
           />
