@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus, Pencil, Check, X, CreditCard as CardIcon, CalendarClock, Share2, Wallet } from "lucide-react";
+import { Plus, Pencil, Check, X, CreditCard as CardIcon, CalendarClock, Share2, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,6 +165,7 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
 }) {
   const [dialogCard, setDialogCard] = useState<CreditCard | "new" | null>(null);
   const [paymentsCardId, setPaymentsCardId] = useState<string | null>(null);
+  const [weeksMonthOffset, setWeeksMonthOffset] = useState(0);
   const paymentsCard = cards.find((c) => c.id === paymentsCardId) ?? null;
   const { start: weekStart, end: weekEnd } = currentWeekRange();
   const allPending = cards.flatMap((c) => c.pagos);
@@ -172,7 +173,7 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
     .filter((p) => !p.pagado && p.fecha >= weekStart && p.fecha <= weekEnd)
     .reduce((s, p) => s + p.monto, 0);
 
-  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const weeksMonthKey = addMonths(new Date().toISOString().slice(0, 10), weeksMonthOffset).slice(0, 7);
 
   const nextMonthKey = addMonths(new Date().toISOString().slice(0, 10), 1).slice(0, 7);
   const nextMonthTotal = allPending
@@ -181,7 +182,7 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
 
   const cubreLiquidez = totalLiquidez >= weekTotal;
 
-  const monthWeeks = weeksOfMonth(currentMonthKey).map((w) => ({
+  const monthWeeks = weeksOfMonth(weeksMonthKey).map((w) => ({
     ...w,
     isCurrent: w.start === weekStart,
     total: allPending
@@ -258,10 +259,35 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
       </div>
 
       <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Pagos por semana ({formatMonthLabel(currentMonthKey)})
+            Pagos por semana ({formatMonthLabel(weeksMonthKey)})
           </CardTitle>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              aria-label="Mes anterior"
+              onClick={() => setWeeksMonthOffset((o) => o - 1)}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            {weeksMonthOffset !== 0 && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setWeeksMonthOffset(0)}>
+                Hoy
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              aria-label="Mes siguiente"
+              onClick={() => setWeeksMonthOffset((o) => o + 1)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           {monthWeeks.map((w) => (
