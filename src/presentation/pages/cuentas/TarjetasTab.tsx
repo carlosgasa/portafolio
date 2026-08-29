@@ -41,7 +41,7 @@ import type { CardWithPayments } from "@/application/use-cases/cuentas/getCuenta
 import type { CardPayment, CreditCard, CuentasSnapshot } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
-import { addMonths, currentWeekRange, formatMonthLabel, toDateOnly } from "@/shared/utils/dates";
+import { addMonths, currentWeekRange, formatMonthLabel } from "@/shared/utils/dates";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { cn } from "@/lib/utils";
 
@@ -65,35 +65,23 @@ function cardPagosDelMes(card: CardWithPayments, targetMonthKey: string): CardPa
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
-/** Semanas lunes-domingo que tocan el mes dado, recortadas a sus limites
- * (la primera y ultima semana pueden quedar parciales). */
-function weeksOfMonth(monthKey: string): { start: string; end: string }[] {
-  const [y, m] = monthKey.split("-").map(Number);
-  const first = new Date(y, m - 1, 1);
-  const last = new Date(y, m, 0);
-  const weeks: { start: string; end: string }[] = [];
-  let cursor = new Date(first);
-  while (cursor <= last) {
-    const dow = cursor.getDay();
-    const diffToMonday = dow === 0 ? 6 : dow - 1;
-    const weekStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - diffToMonday);
-    const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
-    weeks.push({
-      start: toDateOnly(weekStart < first ? first : weekStart),
-      end: toDateOnly(weekEnd > last ? last : weekEnd),
-    });
-    cursor = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate() + 1);
+/** Suma los pagos pendientes de todas las tarjetas por dia, para el mes dado,
+ * omitiendo los dias sin pagos. */
+function pagosPorDia(pending: CardPayment[], monthKey: string): { fecha: string; monto: number }[] {
+  const byDay = new Map<string, number>();
+  for (const p of pending) {
+    if (p.fecha.slice(0, 7) !== monthKey) continue;
+    byDay.set(p.fecha, (byDay.get(p.fecha) ?? 0) + p.monto);
   }
-  return weeks;
+  return [...byDay.entries()]
+    .map(([fecha, monto]) => ({ fecha, monto }))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
-const weekDayFormatter = new Intl.DateTimeFormat("es-MX", { day: "numeric" });
-const weekMonthFormatter = new Intl.DateTimeFormat("es-MX", { month: "short" });
+const dayLabelFormatter = new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric" });
 
-function formatWeekRange(start: string, end: string): string {
-  const s = new Date(`${start}T00:00:00`);
-  const e = new Date(`${end}T00:00:00`);
-  return `${weekDayFormatter.format(s)}–${weekDayFormatter.format(e)} ${weekMonthFormatter.format(e)}`;
+function formatDayLabel(fecha: string): string {
+  return dayLabelFormatter.format(new Date(`${fecha}T00:00:00`));
 }
 
 /** Igual a lo que armaba el estado de cuenta por tarjeta, pero juntando todas las tarjetas en un
@@ -165,7 +153,7 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
 }) {
   const [dialogCard, setDialogCard] = useState<CreditCard | "new" | null>(null);
   const [paymentsCardId, setPaymentsCardId] = useState<string | null>(null);
-  const [weeksMonthOffset, setWeeksMonthOffset] = useState(0);
+  const [daysMonthOffset, setDaysMonthOffset] = useState(0);
   const paymentsCard = cards.find((c) => c.id === paymentsCardId) ?? null;
   const { start: weekStart, end: weekEnd } = currentWeekRange();
   const allPending = cards.flatMap((c) => c.pagos);
@@ -173,7 +161,7 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
     .filter((p) => !p.pagado && p.fecha >= weekStart && p.fecha <= weekEnd)
     .reduce((s, p) => s + p.monto, 0);
 
-  const weeksMonthKey = addMonths(new Date().toISOString().slice(0, 10), weeksMonthOffset).slice(0, 7);
+  const daysMonthKey = addMonths(new Date().toISOString().slice(0, 10), daysMonthOffset).slice(0, 7);
 
   const nextMonthKey = addMonths(new Date().toISOString().slice(0, 10), 1).slice(0, 7);
   const nextMonthTotal = allPending
@@ -182,13 +170,11 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
 
   const cubreLiquidez = totalLiquidez >= weekTotal;
 
-  const monthWeeks = weeksOfMonth(weeksMonthKey).map((w) => ({
-    ...w,
-    isCurrent: w.start === weekStart,
-    total: allPending
-      .filter((p) => !p.pagado && p.fecha >= w.start && p.fecha <= w.end)
-      .reduce((s, p) => s + p.monto, 0),
-  }));
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const monthDays = pagosPorDia(
+    allPending.filter((p) => !p.pagado),
+    daysMonthKey,
+  ).map((d) => ({ ...d, isToday: d.fecha === todayKey }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -261,7 +247,7 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
       <Card className="border-border/60 bg-card/60">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Pagos por semana ({formatMonthLabel(weeksMonthKey)})
+            Pagos por día ({formatMonthLabel(daysMonthKey)})
           </CardTitle>
           <div className="flex items-center gap-1">
             <Button
@@ -269,12 +255,12 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
               size="icon"
               className="size-7"
               aria-label="Mes anterior"
-              onClick={() => setWeeksMonthOffset((o) => o - 1)}
+              onClick={() => setDaysMonthOffset((o) => o - 1)}
             >
               <ChevronLeft className="size-4" />
             </Button>
-            {weeksMonthOffset !== 0 && (
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setWeeksMonthOffset(0)}>
+            {daysMonthOffset !== 0 && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDaysMonthOffset(0)}>
                 Hoy
               </Button>
             )}
@@ -283,30 +269,34 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
               size="icon"
               className="size-7"
               aria-label="Mes siguiente"
-              onClick={() => setWeeksMonthOffset((o) => o + 1)}
+              onClick={() => setDaysMonthOffset((o) => o + 1)}
             >
               <ChevronRight className="size-4" />
             </Button>
           </div>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          {monthWeeks.map((w) => (
-            <div
-              key={w.start}
-              className={cn(
-                "flex flex-col gap-0.5 rounded-lg border px-3 py-2",
-                w.isCurrent ? "border-primary/50 bg-primary/10" : "border-border/60",
-              )}
-            >
-              <span className="text-[11px] text-muted-foreground">
-                {formatWeekRange(w.start, w.end)}
-                {w.isCurrent && " · esta semana"}
-              </span>
-              <span className="font-mono text-sm tabular-nums text-foreground">
-                <Money value={w.total} decimals={2} />
-              </span>
-            </div>
-          ))}
+          {monthDays.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin pagos pendientes este mes.</p>
+          ) : (
+            monthDays.map((d) => (
+              <div
+                key={d.fecha}
+                className={cn(
+                  "flex flex-col gap-0.5 rounded-lg border px-3 py-2",
+                  d.isToday ? "border-primary/50 bg-primary/10" : "border-border/60",
+                )}
+              >
+                <span className="text-[11px] text-muted-foreground">
+                  {formatDayLabel(d.fecha)}
+                  {d.isToday && " · hoy"}
+                </span>
+                <span className="font-mono text-sm tabular-nums text-foreground">
+                  <Money value={d.monto} decimals={2} />
+                </span>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
