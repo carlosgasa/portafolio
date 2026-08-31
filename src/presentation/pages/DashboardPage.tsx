@@ -31,7 +31,7 @@ import { useFinsusPortfolio } from "@/presentation/hooks/useFinsusPortfolio";
 import { useYoTePrestoPortfolio } from "@/presentation/hooks/useYoTePrestoPortfolio";
 import { useCuentas } from "@/presentation/hooks/useCuentas";
 import { formatCurrency, formatPercent, formatShortDate } from "@/shared/utils/format";
-import { currentWeekRange } from "@/shared/utils/dates";
+import { currentWeekRange, today } from "@/shared/utils/dates";
 
 /** Claves tal como las escribe la Cloud Function weeklySnapshot en porInstrumento. */
 const RENDIMIENTO_INSTRUMENTS = [
@@ -171,7 +171,7 @@ export function DashboardPage() {
       breakdown: breakdownData,
       history: chartData,
     });
-    downloadCsv(`reporte-portafolio-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`reporte-portafolio-${today()}.csv`, csv);
   }
 
   return (
@@ -732,7 +732,7 @@ function buildDashboardReportCsv(params: {
 }): string {
   const lines: string[] = [];
   lines.push("Reporte de portafolio");
-  lines.push(`Generado,${new Date().toISOString().slice(0, 10)}`);
+  lines.push(`Generado,${today()}`);
   lines.push("");
   lines.push("Resumen");
   lines.push("Concepto,Monto");

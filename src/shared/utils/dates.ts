@@ -11,6 +11,19 @@ export function toDateOnly(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * Fecha de hoy en zona horaria local, como "YYYY-MM-DD".
+ *
+ * OJO: nunca usar `new Date().toISOString().slice(0, 10)` para esto — eso
+ * convierte el instante actual a UTC, y en zonas horarias detras de UTC
+ * (como Mexico) se adelanta un dia entero durante la tarde/noche local
+ * (p.ej. a partir de las 6pm en UTC-6), lo que rompe cualquier calculo de
+ * "mes siguiente" hecho a partir de ese valor.
+ */
+export function today(): string {
+  return toDateOnly(new Date());
+}
+
 /** Lunes a domingo de la semana en la que estamos hoy. */
 export function currentWeekRange(): { start: string; end: string } {
   const now = new Date();

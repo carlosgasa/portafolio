@@ -41,7 +41,7 @@ import type { DebtWithInstallments, PersonWithDebts } from "@/application/use-ca
 import type { CuentasSnapshot, DebtType } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
-import { addMonths, formatMonthLabel } from "@/shared/utils/dates";
+import { addMonths, formatMonthLabel, today } from "@/shared/utils/dates";
 import { exportStatementImage, exportStatementPdf } from "@/shared/utils/statementExport";
 import { cn } from "@/lib/utils";
 
@@ -220,7 +220,7 @@ export function PersonasTab({ api, persons, totalMeDeben, snapshots }: {
  * mostrarle esto a alguien mas. */
 function buildStatementLines(person: PersonWithDebts): string[] {
   const lines: string[] = [];
-  lines.push(`Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`);
+  lines.push(`Generado: ${formatShortDate(today())}`);
   lines.push("");
   lines.push(`Total pendiente: ${formatCurrency(person.totalMeDebe)}`);
 
@@ -262,8 +262,8 @@ function buildStatementText(person: PersonWithDebts): string {
  * mandarlo directo por WhatsApp sin el detalle completo. */
 function buildSimpleStatementLines(person: PersonWithDebts, monthOffset: number): string[] {
   const lines: string[] = [];
-  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
-  lines.push(`Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`);
+  const targetMonthKey = addMonths(today(), monthOffset).slice(0, 7);
+  lines.push(`Generado: ${formatShortDate(today())}`);
   lines.push("");
 
   let total = 0;
@@ -297,7 +297,7 @@ function buildSimpleStatementLines(person: PersonWithDebts, monthOffset: number)
 }
 
 function buildSimpleStatementText(person: PersonWithDebts, monthOffset: number): string {
-  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  const targetMonthKey = addMonths(today(), monthOffset).slice(0, 7);
   return [
     `Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`,
     ...buildSimpleStatementLines(person, monthOffset),
@@ -357,7 +357,7 @@ function exportStatementAsImage(person: PersonWithDebts) {
 }
 
 function exportSimpleStatementAsPdf(person: PersonWithDebts, monthOffset: number) {
-  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  const targetMonthKey = addMonths(today(), monthOffset).slice(0, 7);
   return exportStatementPdf(
     `Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`,
     buildSimpleStatementLines(person, monthOffset),
@@ -366,7 +366,7 @@ function exportSimpleStatementAsPdf(person: PersonWithDebts, monthOffset: number
 }
 
 function exportSimpleStatementAsImage(person: PersonWithDebts, monthOffset: number) {
-  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  const targetMonthKey = addMonths(today(), monthOffset).slice(0, 7);
   return exportStatementImage(
     `Pagos de ${person.nombre} - ${formatMonthLabel(targetMonthKey)}`,
     buildSimpleStatementLines(person, monthOffset),
@@ -638,7 +638,7 @@ function DebtForm({
   const [montoTotal, setMontoTotal] = useState("");
   const [numCuotas, setNumCuotas] = useState("12");
   const [montoCuota, setMontoCuota] = useState("");
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(() => today());
   const [submitting, setSubmitting] = useState(false);
   const montoTotalValue = evalAmountExpression(montoTotal);
   const montoCuotaValue = evalAmountExpression(montoCuota);

@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
-import { addMonths } from "@/shared/utils/dates";
+import { addMonths, today } from "@/shared/utils/dates";
 
 export interface ValuePoint {
   id: string;
@@ -341,7 +341,7 @@ function PointForm({
   valueLabel: string;
   onSubmit: (point: { fecha: string; valor: number }) => Promise<void>;
 }) {
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(() => today());
   const [valor, setValor] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const valorValue = evalAmountExpression(valor);

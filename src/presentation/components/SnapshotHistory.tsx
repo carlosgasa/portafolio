@@ -22,6 +22,7 @@ import { Money } from "@/presentation/components/Money";
 import { useHiddenBalances } from "@/presentation/hooks/useHiddenBalances";
 import type { CuentasSnapshot, SnapshotDetalleItem, SnapshotTipo } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
+import { today } from "@/shared/utils/dates";
 
 interface SnapshotHistoryProps {
   tipo: SnapshotTipo;
@@ -59,7 +60,7 @@ export function SnapshotHistory({
     try {
       await onTake({
         tipo,
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: today(),
         total: currentTotal,
         detalle: currentDetalle,
       });

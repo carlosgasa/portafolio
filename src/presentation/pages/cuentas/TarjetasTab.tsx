@@ -41,7 +41,7 @@ import type { CardWithPayments } from "@/application/use-cases/cuentas/getCuenta
 import type { CardPayment, CreditCard, CuentasSnapshot } from "@/domain/entities/cuentas";
 import { formatCurrency, formatShortDate } from "@/shared/utils/format";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
-import { addMonths, currentWeekRange, formatMonthLabel } from "@/shared/utils/dates";
+import { addMonths, currentWeekRange, formatMonthLabel, today } from "@/shared/utils/dates";
 import { COLOR_PRESETS } from "@/shared/colorPresets";
 import { cn } from "@/lib/utils";
 
@@ -87,10 +87,10 @@ function formatDayLabel(fecha: string): string {
 /** Igual a lo que armaba el estado de cuenta por tarjeta, pero juntando todas las tarjetas en un
  * solo texto, con subtotal por tarjeta y total general. */
 function buildAllCardsStatementText(cards: CardWithPayments[], monthOffset: number): string {
-  const targetMonthKey = addMonths(new Date().toISOString().slice(0, 10), monthOffset).slice(0, 7);
+  const targetMonthKey = addMonths(today(), monthOffset).slice(0, 7);
   const lines: string[] = [
     `Pagos de tarjetas - ${formatMonthLabel(targetMonthKey)}`,
-    `Generado: ${formatShortDate(new Date().toISOString().slice(0, 10))}`,
+    `Generado: ${formatShortDate(today())}`,
     "",
   ];
 
@@ -161,16 +161,16 @@ export function TarjetasTab({ api, cards, totalPendiente, snapshots, totalLiquid
     .filter((p) => !p.pagado && p.fecha >= weekStart && p.fecha <= weekEnd)
     .reduce((s, p) => s + p.monto, 0);
 
-  const daysMonthKey = addMonths(new Date().toISOString().slice(0, 10), daysMonthOffset).slice(0, 7);
+  const daysMonthKey = addMonths(today(), daysMonthOffset).slice(0, 7);
 
-  const nextMonthKey = addMonths(new Date().toISOString().slice(0, 10), 1).slice(0, 7);
+  const nextMonthKey = addMonths(today(), 1).slice(0, 7);
   const nextMonthTotal = allPending
     .filter((p) => !p.pagado && p.fecha.slice(0, 7) === nextMonthKey)
     .reduce((s, p) => s + p.monto, 0);
 
   const cubreLiquidez = totalLiquidez >= weekTotal;
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = today();
   const monthDays = pagosPorDia(
     allPending.filter((p) => !p.pagado),
     daysMonthKey,
@@ -377,7 +377,7 @@ function UpcomingPayments({ cards }: { cards: CardWithPayments[] }) {
   const { isHidden } = useHiddenBalances();
 
   const { overdueTotal, months } = useMemo(() => {
-    const todayKey = new Date().toISOString().slice(0, 7);
+    const todayKey = today().slice(0, 7);
     const pending = cards.flatMap((c) => c.pagos.filter((p) => !p.pagado));
 
     let overdue = 0;
@@ -564,7 +564,7 @@ function CardPayments({
   card: CardWithPayments;
   api: CuentasApi;
 }) {
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(() => today());
   const [monto, setMonto] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFecha, setEditFecha] = useState("");

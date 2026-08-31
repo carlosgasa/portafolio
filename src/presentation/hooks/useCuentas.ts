@@ -6,7 +6,7 @@ import {
 } from "@/application/use-cases/cuentas/createInstallmentDebt";
 import { FirestoreCuentasRepository } from "@/infrastructure/firebase/repositories/FirestoreCuentasRepository";
 import { useAuth } from "@/presentation/providers/AuthProvider";
-import { addMonths } from "@/shared/utils/dates";
+import { addMonths, today } from "@/shared/utils/dates";
 import type {
   CardPayment,
   CreditCard,
@@ -135,7 +135,7 @@ export function useCuentas() {
       const id = await repo.addLiquidBalance(uid, b);
       await repo.addLiquidBalanceHistoryEntry(uid, {
         balanceId: id,
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: today(),
         monto: b.monto,
       });
     },
@@ -147,7 +147,7 @@ export function useCuentas() {
       if (patch.monto !== undefined) {
         await repo.addLiquidBalanceHistoryEntry(uid, {
           balanceId: id,
-          fecha: new Date().toISOString().slice(0, 10),
+          fecha: today(),
           monto: patch.monto,
         });
       }

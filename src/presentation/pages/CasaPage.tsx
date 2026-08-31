@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import { AmountInput } from "@/components/ui/amount-input";
+import { today } from "@/shared/utils/dates";
 import {
   Dialog,
   DialogContent,
@@ -283,7 +284,7 @@ function ExpenseForm({
   const [categoria, setCategoria] = useState(initial?.categoria ?? "");
   const [cantidad, setCantidad] = useState(String(initial?.cantidad ?? "1"));
   const [precioUnitario, setPrecioUnitario] = useState(String(initial?.precioUnitario ?? ""));
-  const [fecha, setFecha] = useState(initial?.fecha ?? new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(initial?.fecha ?? today());
   const [submitting, setSubmitting] = useState(false);
   const precioValue = evalAmountExpression(precioUnitario);
 

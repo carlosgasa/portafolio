@@ -34,6 +34,7 @@ import { useFinsusPortfolio } from "@/presentation/hooks/useFinsusPortfolio";
 import type { FixedTermAccount } from "@/domain/entities/finsus";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { formatCurrency, formatPercent, formatShortDate } from "@/shared/utils/format";
+import { today } from "@/shared/utils/dates";
 
 /** % del plazo (apertura -> vencimiento) que ya transcurrio, 0-100. */
 function progresoPct(a: FixedTermAccount): number {
@@ -310,9 +311,9 @@ function AccountForm({
   const [cuenta, setCuenta] = useState(initial?.cuenta ?? "");
   const [saldo, setSaldo] = useState(String(initial?.saldo ?? ""));
   const [tasa, setTasa] = useState(String(initial?.tasa ?? ""));
-  const today = new Date().toISOString().slice(0, 10);
-  const [fechaApertura, setFechaApertura] = useState(initial?.fechaApertura ?? today);
-  const [fechaVencimiento, setFechaVencimiento] = useState(initial?.fechaVencimiento ?? today);
+  const todayKey = today();
+  const [fechaApertura, setFechaApertura] = useState(initial?.fechaApertura ?? todayKey);
+  const [fechaVencimiento, setFechaVencimiento] = useState(initial?.fechaVencimiento ?? todayKey);
   const [submitting, setSubmitting] = useState(false);
   const saldoValue = evalAmountExpression(saldo);
 

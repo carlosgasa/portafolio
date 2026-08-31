@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AmountInput } from "@/components/ui/amount-input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { today } from "@/shared/utils/dates";
 import {
   Dialog,
   DialogContent,
@@ -303,7 +304,7 @@ function PriceForm({
   onSubmit: (price: { symbol: string; precioUsd: number; precioMxn: number; fecha: string }) => Promise<void>;
 }) {
   const [precioMxn, setPrecioMxn] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(today());
   const [submitting, setSubmitting] = useState(false);
   const precioValue = evalAmountExpression(precioMxn);
 

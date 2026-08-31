@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Movement } from "@/domain/entities/common";
 import { evalAmountExpression } from "@/shared/utils/evalAmountExpression";
 import { formatShortDate } from "@/shared/utils/format";
+import { today } from "@/shared/utils/dates";
 import { cn } from "@/lib/utils";
 
 interface MovementsListProps {
@@ -172,7 +173,7 @@ function MovementForm({
 }: {
   onSubmit: (movement: Omit<Movement, "id">) => Promise<void>;
 }) {
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(() => today());
   const [monto, setMonto] = useState("");
   const [nota, setNota] = useState("");
   const [submitting, setSubmitting] = useState(false);
