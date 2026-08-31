@@ -1,7 +1,18 @@
+/**
+ * Suma meses a una fecha "YYYY-MM-DD", recortando el dia al ultimo valido
+ * del mes destino en vez de desbordarse (31 ago + 1 mes = 30 sep, no 1 oct
+ * — `Date.setMonth` de JS hace esto ultimo cuando el mes destino tiene menos
+ * dias que el de origen, lo que se saltaba meses enteros en cualquier
+ * navegacion de "mes siguiente").
+ */
 export function addMonths(dateOnly: string, months: number): string {
-  const d = new Date(`${dateOnly}T00:00:00`);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
+  const [y, m, day] = dateOnly.split("-").map(Number);
+  const total = (m - 1) + months;
+  const targetYear = y + Math.floor(total / 12);
+  const targetMonth = ((total % 12) + 12) % 12;
+  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const targetDay = Math.min(day, lastDayOfTargetMonth);
+  return toDateOnly(new Date(targetYear, targetMonth, targetDay));
 }
 
 export function toDateOnly(d: Date): string {

@@ -449,6 +449,7 @@ function UpcomingPayments({ cards }: { cards: CardWithPayments[] }) {
                     fontSize: 12,
                   }}
                   labelStyle={{ color: "var(--foreground)" }}
+                  itemStyle={{ color: "var(--foreground)" }}
                   formatter={(value) => [
                     isHidden ? "••••••" : formatCurrency(Number(value)),
                     "Monto",

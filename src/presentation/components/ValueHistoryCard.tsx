@@ -236,6 +236,7 @@ export function ValueHistoryCard({
                     fontSize: 12,
                   }}
                   labelStyle={{ color: "var(--foreground)" }}
+                  itemStyle={{ color: "var(--foreground)" }}
                   formatter={(value, name) => [isHidden ? "••••••" : formatCurrency(Number(value)), name]}
                 />
                 <Area
